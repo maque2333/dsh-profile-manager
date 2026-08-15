@@ -86,9 +86,35 @@ profile_plugin_install(profile, source) # 安装
 
 | 任务 | 内容 | 验收 |
 |---|---|---|
-| C2.1 取证 | 读官方 `ui-settings-plugins` 的 `settings.plugins.tab` slot 确切 API（`SlotSpec`/`SlotMap` 结构、`ctx.slots.inject` 用法） | 拿到可照抄的最小 slot 注册模板 |
+| C2.1 取证 | 读官方 `ui-settings-plugins` 的 `settings.plugins.tab` slot 确切 API（`SlotSpec`/`SlotMap` 结构、`ctx.slots.inject` 用法） | ✅ 已完成（见下「C2 取证结论」） |
 | C2.2 client bundle | 给 cli 包加 `dsh.client` 面 + client 入口，复用独立面板的商店 React 组件 | 官方 web 设置里出现「商店」tab，可搜索安装 |
 | C2.3 验证 | 官方 webUI 里验证 tab 名册/交互/卸载 | 从零安装后官方界面商店 tab 闭环 |
+
+#### C2 取证结论（2026-08-15）
+
+1. **slot 注册模板**（官方 `ui-settings-plugins/src/client/index.ts`）：
+   ```ts
+   export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope']
+   export function apply(ctx: ClientContext) {
+     ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
+       name: 'settings.plugins.tab',
+       id: 'store',          // tab 唯一 id
+       order: 10,            // 排序
+       label: () => '插件商店',  // tab 标题
+       locale: NS,           // 可选，本地化
+       inject: () => ({}),   // 注入给 React 组件的 props
+     }, StoreTabReactComponent))
+   }
+   ```
+   `settings.plugins.tab` 是 `{ kind: 'list'; scope: 'root' }` 的 root 列表 slot。
+
+2. **client bundle 协议**（官方 `packages/client/tsdown.client.ts`）：产物是 **CJS**，用
+   `window.__ModuleLoader__.load({ id, factory: (require) => { ... } })` 注册；
+   React 等平台模块是 **external**（从 loader module table 解析，不进 bundle）；
+   跨插件只允许 type-only import（purity gate）。→ 我们的 client 源码只需：
+   React（external）+ `ctx.slots`（apply 参数，无 value import）+ `fetch('/profile-manager/api/plugin/*')`（相对路径调我们 host 已建好的路由）。
+
+3. **构建**：官方用 tsdown；我们用 **esbuild** 模拟（`--format=cjs --banner/--footer/--intro` 复刻 `__ModuleLoader__` 协议 + `--external:react`），可避免引入 tsdown。
 
 ## 7. 验收标准（全套）
 
