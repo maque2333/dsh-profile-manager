@@ -52,6 +52,7 @@ dshm bootstrap             # 创建并启动 manager（Web 面板）profile
 |---|---|
 | `dshm list` | 列出全部 profile：形态、bundles、依赖、实例状态 |
 | `dshm show <name>` | 单个 profile 的 manifest + patch 层 + 依赖 |
+| `dshm create <name>` | 新建空 profile（起步 = `@deepseek-ai/dsh-base`） |
 | `dshm import <文件> [--name N] [--force] [--allow-builds]` | 从 `dshm-profile.yaml` 安装 profile 及其全部包 |
 | `dshm export <name> [-o 文件]` | 反向导出到同一格式 |
 | `dshm delete <name> [--purge] [--yes] [--force]` | 删除（默认归档；`--purge` 彻底删除） |
@@ -60,6 +61,9 @@ dshm bootstrap             # 创建并启动 manager（Web 面板）profile
 | `dshm restart <name> [--port N]` | 停止全部后用上次端口重启 |
 | `dshm status [name]` | 实例状态（web：HTTP 探活；generic：进程存活） |
 | `dshm doctor` | 一致性诊断 + 崩溃残留 + 归档清单 |
+| `dshm plugin list [profile]` | 列出 plugin：无参数 = 全局汇总；带 profile = 单 profile |
+| `dshm plugin add <profile> <pkg>` | 给 profile 安装 plugin（透传 `dsh plugin add`） |
+| `dshm plugin remove <profile> <pkg>` | 卸载 plugin（透传 `dsh plugin remove`） |
 | `dshm bootstrap [--port N]` | 创建并启动 `manager` profile（Web 面板） |
 
 所有命令都遵守 `DSH_HOME`（默认 `~/.dsh`）。

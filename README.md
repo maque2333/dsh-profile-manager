@@ -52,6 +52,7 @@ dshm bootstrap             # create & start the manager (web panel) profile
 |---|---|
 | `dshm list` | List every profile: shape, bundles, dependencies, instance status |
 | `dshm show <name>` | One profile's manifest + patch layer + dependencies |
+| `dshm create <name>` | Create an empty profile (starts from `@deepseek-ai/dsh-base`) |
 | `dshm import <file> [--name N] [--force] [--allow-builds]` | Install a profile and all its packages from `dshm-profile.yaml` |
 | `dshm export <name> [-o file]` | Reverse-export a profile to the same format |
 | `dshm delete <name> [--purge] [--yes] [--force]` | Delete (archive by default; `--purge` truly removes) |
@@ -60,6 +61,9 @@ dshm bootstrap             # create & start the manager (web panel) profile
 | `dshm restart <name> [--port N]` | Stop all + restart on the last port |
 | `dshm status [name]` | Instance status (web: HTTP probe; generic: process liveness) |
 | `dshm doctor` | Consistency diagnostics + crash residue + archive listing |
+| `dshm plugin list [profile]` | List plugins: global summary (no arg) or one profile's plugins |
+| `dshm plugin add <profile> <pkg>` | Install a plugin into a profile (forwards `dsh plugin add`) |
+| `dshm plugin remove <profile> <pkg>` | Remove a plugin (forwards `dsh plugin remove`) |
 | `dshm bootstrap [--port N]` | Create + start the `manager` profile (the web panel) |
 
 All commands respect `DSH_HOME` (default `~/.dsh`).

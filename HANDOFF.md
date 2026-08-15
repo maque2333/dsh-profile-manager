@@ -3,10 +3,11 @@
 > 每个 agent 会话结束时更新本文档；下一会话从"下一步"开始。决策不可翻案（见 DESIGN.md §11，改动需人类确认）。
 > **交接协议**：新会话开工顺序 = 读 AGENTS.md → 读本文件 → `git -C <仓库> log --oneline` 对照 → 从"下一步"第一条开始。
 
-## 当前状态（最后更新：2026-08-15，M3 发布完成）
+## 当前状态（最后更新：2026-08-15，P1 阶段 A 完成）
 
-- **阶段**：M0 ✅；M1 ✅（core + CLI，真机验收）；M2 ✅（plugin bundle + bootstrap）；**M3 ✅ 完成**（plugin 合入 cli、双语 README、Windows 审查、npm 发布两包、GitHub push + `dsh-plugin` topic）。P1（profile 内 plugin 管理）未开工。
-- **发布产物**：npm `@dsh-profile-manager/core@0.1.0` + `dsh-profile-manager@0.1.0`（均已发布）；GitHub `https://github.com/maque2333/dsh-profile-manager`（main 已 push，topic = `dsh-plugin`）。
+- **阶段**：M0 ✅；M1 ✅；M2 ✅；M3 ✅；**P1 阶段 0/A ✅**（`/profile` 命令补齐 import/export/restart + create/plugin；`create` + `plugin list`（全局/单）+ `add/remove` 在 CLI/面板/工具/命令 4 界面同步交付，58/58 测试全绿）。**P1 阶段 B/C 待人类决策**（见「下一步」）。
+- **发布产物**：npm `@dsh-profile-manager/core@0.1.0` + `dsh-profile-manager@0.1.1`；GitHub `https://github.com/maque2333/dsh-profile-manager`（main 已 push，topic = `dsh-plugin`）。P1 阶段 A 尚未发版（待 B/C 决策后一起发 0.2.0）。
+- **设计文档**：`docs/p1-plugin-design.md`（含阶段 A 已完成、阶段 B/C 重新评估三选一）。
 - **工作区**：本会话工作区已直接落在仓库目录 `/Users/maque/Suzume_Files/Project/dsh-profile-manager`（写仓库零审批；不再是旧 Option C 的「暂存目录 + 只读镜像」布局，见下方「环境事实」）。
 - **git 提交**：`8e5fbd4`（M0）→ `316cf44`（M1）→ `d75da67`（M1 验收）→ `4521725`（交接）→ `5552190`（M2）→ `aa44a21`（bootstrap link）→ `9efa56e`（交接）→ `df0bbd9`（M3 合入+README）→ `a72ec06`（Windows 审查）。已 push 到 origin/main。
 - **本机可用性**：`dshm` 全局 link 已重新指向当前仓库 `packages/cli`（bin → `lib/cli.js`）；**改代码后 `pnpm --filter dsh-profile-manager build` 即全局生效**。
@@ -30,6 +31,7 @@
 7. **M2 取证**：`docs/m2-api-contract.md` —— 逐个核实官方扩展点签名（ctx.tools/defineTool、ctx.commands、ctx.webServer、ctx.subprocess、dsh.bundle/dsh.client 契约）；
 8. **M2 实现**：`packages/plugin`（host 的 `ctx.profileManager` 服务 + 7 个 `profile_*` 工具 + `/profile` 命令 + 自保只读；`/profile-manager` 面板 = host 路由 + API + esbuild 打包的 React 前端）+ CLI `dshm bootstrap`；
 9. **M2 验证**：headless agent 真实调用 `profile_list` 返回正确结果；web 实例 curl 面板 HTML/API/client.js 全通；`dshm bootstrap` 起 manager 实例、`list` 里普通一行、优雅停止；53/53 测试全绿。
+10. **P1 阶段 0/A**：`/profile` 命令补齐（import/export/restart + create/plugin）；`create` + `plugin list`（全局/单）+ `add/remove` 4 界面同步（core `plugins` 模块 + CLI + 面板 + 工具 + 命令）；58/58 测试全绿。
 
 ## 进行中
 
@@ -37,11 +39,11 @@
 
 ## 下一步（按优先级）
 
-1. **人工验证**：① `dshm start cc-tui --foreground`；② 真实浏览器打开 manager 面板交互（`dshm bootstrap` 后访问 `http://127.0.0.1:<port>/profile-manager`）；
-2. **M3 发布清单**（已定，勿遗漏）：
-   - `packages/cli` 的 `@dsh-profile-manager/core: workspace:*` → 版本依赖（`^0.1.0`），npm 不认 workspace 协议；
-   - **core 先发布、cli 后发**（依赖顺序）；版本 0.1.0；README 注明适配 dsh 0.1.0-rc.x；
-   - Windows 实测（spawn/taskkill/路径）；npm publish；GitHub 建仓 + 远端 + `dsh-plugin` topic；awesome 收录（awesome-dsh-plugin、0xsline/awesome-deepseek-harness）。
+1. **P1 阶段 B/C 决策（三选一，详见 `docs/p1-plugin-design.md` §8）**：
+   - **选项 1（推荐）**：P1 到此为止——阶段 A（跨 profile 的 create/list/add/remove）即差异化，B（enable/disable 有 entry 级粒度问题 + 自保冲突）与 C（store 社区已有 dsh-plugin-store 完整实现）让给社区，收尾发 0.2.0；
+   - 选项 2：简化做 B——只对运行中 profile 做 entry 级启停（复用 plugin-inventory）；
+   - 选项 3：坚持 B+C（B 跨 profile 启停需静态解析 bundle patch，C 自建 store），投入最大。
+2. **收尾**（B/C 决策后）：更新 DESIGN 里程碑状态 + 发版 0.2.0（npm）。
 
 ## 已知坑（实现时对照，勿重踩）
 
