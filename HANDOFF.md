@@ -41,6 +41,7 @@
 ## 最近完成
 
 - **bootstrap --force**（`67ac214`）：`dshm bootstrap --force --port N` 直接覆盖已存在的 manager profile（先 archive 旧的，运行中仍拒绝）。修复用户真机 `dshm start manager` 挂起的根因：旧 manager profile 引用 M2 时代包名 `@dsh-profile-manager/plugin`（M3 合并后改名 `dsh-profile-manager`），本地 link 已消失 → `cannot resolve profile bundle`。
+- **审计修复**（`c2b9832`）：① `dshm import --name` 原来不生效（只改提示文字不改 profile 名）→ 现透传 `ImportOptions.name` 覆盖 spec.name；② 面板 action 报错被 `refresh()` 的 `setError('')` 吞掉 → refresh 不再清 error，手动刷新按钮显式清；③ 插件形态 `stop` 缺自保（会停掉面板进程自己，restart/delete 早有）→ 补 `currentProfileName()` 自保；④ `resolvePlugin` 发布路径坏（`cordis.patch.yml` 被打包导致永远走 `link:`，且 `^0.1.0` 从未发布）→ 改用「路径是否含 node_modules」区分开发/发布，发布走 `name@^version`；⑤ doctor 端口冲突重复报两条 → 去掉冗余的 `instanceByPort` 检查。66/66 测试全绿。
 
 ## 下一步（按优先级）
 
