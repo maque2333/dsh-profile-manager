@@ -1,7 +1,7 @@
 # P1 设计：profile 内 plugin 管理（草案 v2，待确认）
 
-> 状态：**草案 v2**。定位与调研结论见 §1；阶段计划见 §7（供人类确认后开工）。
-> 调研结论：官方自带只读 plugin 清单（`pluginInventory/list`）+ CLI 安装（`dsh plugin add/remove`，透传 pnpm，支持 npm/git/github/file/link）；社区 [dsh-plugin-hub](https://github.com/Noob-stupid/dsh-plugin-hub) 已做单 profile 启停 + GitHub 市场。**我们的差异化 = profile 视角（跨 profile 的 plugin 管理）**。
+> 状态：**草案 v2（阶段 0/A 已完成）**。定位与调研结论见 §1；阶段计划见 §7。
+> 调研结论：官方自带只读 plugin 清单（`pluginInventory/list`）+ CLI 安装（`dsh plugin add/remove`，透传 pnpm，支持 npm/git/github/file/link）；社区 [dsh-plugin-hub](https://github.com/Noob-stupid/dsh-plugin-hub) 已做单 profile 启停 + GitHub 市场；[dsh-plugin-store](https://www.npmjs.com/package/dsh-plugin-store) 已做**完整 store**（浏览/搜索/一键安装/评分/依赖图/审计）；GitHub `dsh-plugin` topic 已有 **3191 个仓库**。**我们的差异化 = profile 视角（跨 profile 的 plugin 管理）**。
 
 ## 1. 定位与差异化
 
@@ -102,24 +102,37 @@ dshm start writing              # 回 profile 层启动
 
 > 表头「面板/工具」= 2/3 界面，「/profile」= 4 界面。每完成一个能力，先对着矩阵勾选，缺一处即未交付。
 
-### 7.2 阶段划分
+### 7.2 阶段划分（进度）
 
-| 阶段 | 内容 | 交付物 | 验收 |
-|---|---|---|---|
-| **0：界面补齐** | 补 `/profile` 命令的 import/export/restart；确立对齐矩阵为长期基准 | `/profile` 命令补齐 | 现有功能 4 界面矩阵一致（bootstrap 除外） |
-| **A：plugin 基础（4 界面同步）** | `create` + `plugin list`（全局/单）+ `add`/`remove`，CLI/面板/工具/命令同步交付 | core plugin 模块 + 4 界面 | 矩阵 A 行全勾；`create→add→list→start` 闭环 |
-| **B：启停（4 界面同步）** | `enable`/`disable`（写 patch，HMR 热生效） | 4 界面启停 | 矩阵 B 行全勾 |
-| **C：store** | 插件名 → 来源解析 + 市场 UI | 市场 | 输入插件名即装 |
+| 阶段 | 内容 | 状态 |
+|---|---|---|
+| **0：界面补齐** | 补 `/profile` 命令的 import/export/restart | ✅ 完成 |
+| **A：plugin 基础（4 界面同步）** | `create` + `plugin list`（全局/单）+ `add`/`remove` | ✅ 完成（58/58 测试全绿，CLI/面板/工具/命令全勾） |
+| **B：启停** | `enable`/`disable` | ⏸ 待决策（见下方「阶段 B/C 重新评估」） |
+| **C：store** | 插件名 → 来源解析 + 市场 UI | ⏸ 待决策（社区已有 dsh-plugin-store 完整实现） |
 
-**阶段 A 范围**（plugin 基础，4 界面同步）：
-- `create`：新建空 profile（bundles 默认 `[dsh-base]`），复用 core 已有 import 的「写三件套」；
-- `plugin list`（全局 + 单 profile）：读定义态，运行中叠加状态；
-- `plugin add/remove`：透传官方 `dsh plugin`，错误透明、装包冷提示；
-- 上述每个能力，CLI / 面板 / 工具 / `/profile` **四处同步交付**（不做「只先 CLI」）。
+## 8. 阶段 B/C 重新评估（调研后新增，待人类拍板）
+
+阶段 A 落地后，调研发现两个事实改变了 B/C 的价值判断：
+
+**阶段 B（enable/disable）的粒度问题**：
+- DSH「停用」停的是 **entry**（cordis 插件行），不是 bundle；entry 列表只有运行时（`pluginInventory`）能拿到，**只对当前运行的 profile 有效**；
+- 我们的面板寄生在 manager 进程里，`ctx.loader` 是 manager 自己的——启用/停用只能针对 manager 自己（又撞自保只读）；
+- 跨 profile 启停需静态解析每个 bundle 的 `cordis.patch.yml` 提取 entry id，复杂度高、对「一个 bundle 多个 entry」的基础 bundle 语义混乱；
+- 结论：**enable/disable 天然是「单 profile 运行时」操作，与我们的「profile 视角」差异化不契合**，且 dsh-plugin-hub 已做。
+
+**阶段 C（store）的竞争格局**：
+- [dsh-plugin-store](https://www.npmjs.com/package/dsh-plugin-store) 已是**完整 store**（浏览/搜索/一键安装/评分/依赖图/审计）；
+- [dsh-plugin-hub](https://github.com/Noob-stupid/dsh-plugin-hub) 已有 GitHub 市场；
+- GitHub `dsh-plugin` topic 已有 **3191 个仓库**，awesome 列表在策展；
+- 结论：**store 社区已相当成熟，我们再做难有差异化**；我们的独特价值仍是「跨 profile 的 plugin 管理」（阶段 A 已交付）。
+
+**建议（三选一，待人类拍板）**：
+1. **P1 到此为止**——阶段 A（跨 profile 的 create/list/add/remove）就是我们的差异化，B/C 让给社区，直接收尾（更新文档 + 发布）；
+2. **简化做 B**——只对「正在运行的 profile」提供 entry 级启停（复用 plugin-inventory），作为面板里的顺手操作，不强行跨 profile；
+3. **坚持做 B + C**——按原计划（B 跨 profile 启停需解析 bundle patch；C 做自己的 store），投入最大。
 
 ## 待确认（评审时拍板）
 
-1. 阶段划分 0/A/B/C 是否符合预期？
-2. `create` 起步 bundles 默认 `[dsh-base]`，还是允许 `--bundles` 一次指定多个？
-3. 全局 plugin 列表按「plugin → 被哪些 profile 引用」分组，是否满足想象？
-4. 对齐矩阵以「4 界面同步交付」为准（不再「先 CLI 后补」），是否 OK？
+1. 阶段 B/C 按上面「三选一」走哪条？
+2. `create` 起步 bundles 默认 `[dsh-base]`，是否要支持 `--bundles` 一次指定多个？（阶段 A 已按默认 `[dsh-base]` 实现）
