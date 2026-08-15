@@ -3,13 +3,14 @@
 > 每个 agent 会话结束时更新本文档；下一会话从"下一步"开始。决策不可翻案（见 DESIGN.md §11，改动需人类确认）。
 > **交接协议**：新会话开工顺序 = 读 AGENTS.md → 读本文件 → `git -C <仓库> log --oneline` 对照 → 从"下一步"第一条开始。
 
-## 当前状态（最后更新：2026-08-15，M2 完成）
+## 当前状态（最后更新：2026-08-15，M3 发布完成）
 
-- **阶段**：M0 ✅；M1 ✅（core + CLI，真机验收）；**M2 ✅ 完成**（plugin bundle + bootstrap，53/53 测试全绿，headless 工具调用 + web 面板 + bootstrap 端到端验证通过）；M3（发布）未开工。
+- **阶段**：M0 ✅；M1 ✅（core + CLI，真机验收）；M2 ✅（plugin bundle + bootstrap）；**M3 ✅ 完成**（plugin 合入 cli、双语 README、Windows 审查、npm 发布两包、GitHub push + `dsh-plugin` topic）。P1（profile 内 plugin 管理）未开工。
+- **发布产物**：npm `@dsh-profile-manager/core@0.1.0` + `dsh-profile-manager@0.1.0`（均已发布）；GitHub `https://github.com/maque2333/dsh-profile-manager`（main 已 push，topic = `dsh-plugin`）。
 - **工作区**：本会话工作区已直接落在仓库目录 `/Users/maque/Suzume_Files/Project/dsh-profile-manager`（写仓库零审批；不再是旧 Option C 的「暂存目录 + 只读镜像」布局，见下方「环境事实」）。
-- **git 提交**：`8e5fbd4`（M0）→ `316cf44`（M1 第一版）→ `d75da67`（M1 验收补强）→ `4521725`（交接整理）→ `5552190`（M2 plugin bundle + bootstrap）→ `aa44a21`（bootstrap 本地 plugin 自动探测）。远端未配置。
-- **本机可用性**：`dshm` 全局 link 已重新指向当前仓库 `packages/cli`（零审批会话内用 `danger-full-access` 手动 relink）；**改代码后 `pnpm --filter dsh-profile-manager build` 即全局生效**。
-- **人工验证（已全部通过 ✅）**：① `dshm start cc-tui --foreground` 运行正常；② 用户真实环境跑 `dshm bootstrap` 创建 manager profile 且 webUI 面板运行正常（浏览器渲染交互确认）。
+- **git 提交**：`8e5fbd4`（M0）→ `316cf44`（M1）→ `d75da67`（M1 验收）→ `4521725`（交接）→ `5552190`（M2）→ `aa44a21`（bootstrap link）→ `9efa56e`（交接）→ `df0bbd9`（M3 合入+README）→ `a72ec06`（Windows 审查）。已 push 到 origin/main。
+- **本机可用性**：`dshm` 全局 link 已重新指向当前仓库 `packages/cli`（bin → `lib/cli.js`）；**改代码后 `pnpm --filter dsh-profile-manager build` 即全局生效**。
+- **人工验证（已全部通过 ✅）**：① `dshm start cc-tui --foreground` 运行正常；② 用户真实环境跑 `dshm bootstrap` 创建 manager profile 且 webUI 面板运行正常。
 
 ## 真机验收证据（真实 `~/.dsh`，2026-08-15）
 
