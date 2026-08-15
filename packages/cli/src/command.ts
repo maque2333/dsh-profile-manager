@@ -61,7 +61,16 @@ export function registerProfileCommand(ctx: Context, pm: ProfileManager): void {
                 ? { kind: 'success', text: `已卸载 ${rest[2]}（装包冷，重启生效）` }
                 : { kind: 'error', text: `卸载失败：${r.output}` }
             }
-            return { kind: 'error', text: 'plugin 用法：/profile plugin list [profile] | add <profile> <pkg> | remove <profile> <pkg>' }
+            if (op === 'entries') return { kind: 'success', text: fmt(pm.pluginEntries(rest[1])) }
+            if (op === 'enable') {
+              pm.pluginEnable(rest[1], rest[2])
+              return { kind: 'success', text: `已启用 ${rest[2]}（运行中 HMR 热生效）` }
+            }
+            if (op === 'disable') {
+              pm.pluginDisable(rest[1], rest[2])
+              return { kind: 'success', text: `已停用 ${rest[2]}（运行中 HMR 热生效）` }
+            }
+            return { kind: 'error', text: 'plugin 用法：/profile plugin list [profile] | entries <profile> | add/remove <profile> <pkg> | enable/disable <profile> <entryId>' }
           }
           case 'doctor':
             return { kind: 'success', text: fmt(await pm.doctor()) }

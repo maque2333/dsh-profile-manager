@@ -194,6 +194,25 @@ export function registerPanelRoutes(ctx: Context, pm: ProfileManager): void {
             ? sendJson(res, 200, { ok: true, removed: remove.pkg, profile: remove.profile })
             : sendJson(res, 400, { ok: false, error: `卸载失败（退出码 ${r.code}）`, output: r.output })
         }
+        if (route === '/plugin/entries' && method === 'GET' && name !== undefined) {
+          return sendJson(res, 200, { ok: true, entries: pm.pluginEntries(name) })
+        }
+        if (route === '/plugin/enable' && method === 'POST' && typeof body === 'object' && body !== null) {
+          const enable = body as { profile?: unknown; entryId?: unknown }
+          if (typeof enable.profile !== 'string' || typeof enable.entryId !== 'string') {
+            return sendJson(res, 400, { ok: false, error: '缺少 profile 或 entryId' })
+          }
+          pm.pluginEnable(enable.profile, enable.entryId)
+          return sendJson(res, 200, { ok: true, enabled: enable.entryId, profile: enable.profile })
+        }
+        if (route === '/plugin/disable' && method === 'POST' && typeof body === 'object' && body !== null) {
+          const disable = body as { profile?: unknown; entryId?: unknown }
+          if (typeof disable.profile !== 'string' || typeof disable.entryId !== 'string') {
+            return sendJson(res, 400, { ok: false, error: '缺少 profile 或 entryId' })
+          }
+          pm.pluginDisable(disable.profile, disable.entryId)
+          return sendJson(res, 200, { ok: true, disabled: disable.entryId, profile: disable.profile })
+        }
         return sendJson(res, 404, { ok: false, error: `未知 API：${method} ${route}` })
       } catch (error) {
         if (error instanceof DshmError) {

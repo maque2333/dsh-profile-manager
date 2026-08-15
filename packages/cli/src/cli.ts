@@ -13,10 +13,12 @@ import {
   importProfileFile,
   isValidProfileName,
   listAllPlugins,
+  listProfileEntries,
   listProfilePlugins,
   listViews,
   loadRuntime,
   pluginAddRemove,
+  setEntryDisabled,
   readProfile,
   resolveDshHome,
   runDoctor,
@@ -393,6 +395,42 @@ async function main(argv: string[]): Promise<void> {
         throw new DshmError(`卸载失败：dsh plugin remove 退出码 ${r.code}`)
       }
       console.log(`已卸载 ${pkg}（装包冷：若运行中需重启生效）`)
+    })
+
+  pluginCmd
+    .command('entries')
+    .description('列出某 profile 可热插拔的 plugin entry（第三方 bundle 展开；内置 bundle 受保护不列出）')
+    .argument('<profile>', 'profile 名')
+    .action((profile: string) => {
+      const entries = listProfileEntries(home(), profile)
+      if (entries.length === 0) {
+        console.log(`profile "${profile}" 没有可热插拔的第三方 plugin entry（用 dshm plugin ${profile} add <pkg> 安装）`)
+        return
+      }
+      console.log(`profile "${profile}" 可热插拔的 entry（${entries.length}）：`)
+      for (const e of entries) {
+        console.log(`  ${e.disabled ? '⏸（停用）' : '✓'} ${e.entryId}  [${e.moduleName}]`)
+      }
+    })
+
+  pluginCmd
+    .command('enable')
+    .description('启用某 profile 的一个 plugin entry（写 patch，运行中 HMR 热生效）')
+    .argument('<profile>', 'profile 名')
+    .argument('<entryId>', 'entry id（用 plugin entries <profile> 查看）')
+    .action((profile: string, entryId: string) => {
+      setEntryDisabled(home(), profile, entryId, false)
+      console.log(`已启用 ${entryId}（运行中则 HMR 热生效，否则下次启动生效）`)
+    })
+
+  pluginCmd
+    .command('disable')
+    .description('停用某 profile 的一个 plugin entry（写 patch，运行中 HMR 热生效）')
+    .argument('<profile>', 'profile 名')
+    .argument('<entryId>', 'entry id（用 plugin entries <profile> 查看）')
+    .action((profile: string, entryId: string) => {
+      setEntryDisabled(home(), profile, entryId, true)
+      console.log(`已停用 ${entryId}（运行中则 HMR 热生效，否则下次启动生效）`)
     })
 
   program

@@ -292,4 +292,58 @@ export function registerProfileTools(ctx: Context, pm: ProfileManager): void {
       }
     },
   }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_entries',
+    description:
+      '列出某 profile 可热插拔的 plugin entry（第三方 bundle 展开；内置 bundle 是基础设施，受保护、不列出）。'
+      + '返回 entryId + moduleName + disabled 状态，供 profile_plugin_enable/disable 使用。',
+    parameters: {
+      profile: { type: 'string', required: true, description: 'profile 名' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        return json({ ok: true, entries: pm.pluginEntries(args.profile) })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_enable',
+    description: '启用某 profile 的一个 plugin entry（写 cordis.patch.yml，运行中 HMR 热生效、不重启）。',
+    parameters: {
+      profile: { type: 'string', required: true, description: 'profile 名' },
+      entryId: { type: 'string', required: true, description: 'entry id（用 profile_plugin_entries 查）' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        pm.pluginEnable(args.profile, args.entryId)
+        return json({ ok: true, enabled: args.entryId, profile: args.profile })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_disable',
+    description: '停用某 profile 的一个 plugin entry（写 cordis.patch.yml，运行中 HMR 热生效、不重启）。',
+    parameters: {
+      profile: { type: 'string', required: true, description: 'profile 名' },
+      entryId: { type: 'string', required: true, description: 'entry id（用 profile_plugin_entries 查）' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        pm.pluginDisable(args.profile, args.entryId)
+        return json({ ok: true, disabled: args.entryId, profile: args.profile })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
 }

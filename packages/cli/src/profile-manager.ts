@@ -22,7 +22,9 @@ import {
   createProfile,
   listAllPlugins,
   listProfilePlugins,
+  listProfileEntries,
   pluginAddRemove,
+  setEntryDisabled,
   type ProfileInfo,
   type ProfileView,
   type StartResult,
@@ -33,6 +35,7 @@ import {
   type PluginEntry,
   type PluginSummary,
   type PluginOpResult,
+  type PluginEntryInfo,
 } from '@dsh-profile-manager/core'
 
 declare module '@deepseek-ai/cordis' {
@@ -212,5 +215,17 @@ export class ProfileManager extends Service {
 
   pluginRemove(profile: string, pkg: string): PluginOpResult {
     return pluginAddRemove(this.home, profile, ['remove', pkg], { log: (m: string) => this.log(m) })
+  }
+
+  pluginEntries(profile: string): PluginEntryInfo[] {
+    return listProfileEntries(this.home, profile)
+  }
+
+  pluginEnable(profile: string, entryId: string): void {
+    setEntryDisabled(this.home, profile, entryId, false)
+  }
+
+  pluginDisable(profile: string, entryId: string): void {
+    setEntryDisabled(this.home, profile, entryId, true)
   }
 }

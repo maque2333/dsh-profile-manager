@@ -35,6 +35,12 @@ interface PluginEntry {
   kind: string
 }
 
+interface EntryInfo {
+  entryId: string
+  moduleName: string
+  disabled: boolean
+}
+
 interface PluginSummary {
   plugin: string
   kind: string
@@ -62,6 +68,7 @@ function App() {
   const [globalPlugins, setGlobalPlugins] = useState<PluginSummary[] | null>(null)
   const [plugins, setPlugins] = useState<PluginEntry[]>([])
   const [pluginPkg, setPluginPkg] = useState('')
+  const [entries, setEntries] = useState<EntryInfo[]>([])
 
   const refresh = useCallback(async () => {
     setBusy(true)
@@ -136,11 +143,17 @@ function App() {
     setPlugins(data.ok ? data.plugins : [])
   }
 
+  const loadEntries = async (name: string): Promise<void> => {
+    const data = await api('/plugin/entries?name=' + encodeURIComponent(name))
+    setEntries(data.ok ? data.entries : [])
+  }
+
   const doShow = (name: string) => act(async () => {
     const data = await api('/show?name=' + encodeURIComponent(name))
     if (data.ok) {
       setDetail({ name: data.name, bundles: data.bundles, dependencies: data.dependencies, patch: data.patch })
       await loadPlugins(name)
+      await loadEntries(name)
     } else setError(data.error ?? 'show 失败')
   })
 
@@ -170,6 +183,18 @@ function App() {
     const data = await api('/plugin/remove', { method: 'POST', body: JSON.stringify({ profile, pkg }) })
     if (!data.ok) setError(data.error ?? 'plugin remove 失败')
     else await loadPlugins(profile)
+  })
+
+  const doPluginEnable = (profile: string, entryId: string) => act(async () => {
+    const data = await api('/plugin/enable', { method: 'POST', body: JSON.stringify({ profile, entryId }) })
+    if (!data.ok) setError(data.error ?? 'enable 失败')
+    else await loadEntries(profile)
+  })
+
+  const doPluginDisable = (profile: string, entryId: string) => act(async () => {
+    const data = await api('/plugin/disable', { method: 'POST', body: JSON.stringify({ profile, entryId }) })
+    if (!data.ok) setError(data.error ?? 'disable 失败')
+    else await loadEntries(profile)
   })
 
   return (
@@ -251,6 +276,18 @@ function App() {
               <div key={pl.name} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '2px 0' }}>
                 <span>✓ {pl.name} <span style={{ color: '#888' }}>[{pl.kind}]</span></span>
                 <button className="danger" onClick={() => void doPluginRemove(detail.name, pl.name)} disabled={busy}>卸载</button>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 13 }}>
+            <strong>可热插拔 entry（{entries.length}）：</strong>
+            {entries.length === 0 && <div style={{ color: '#888' }}>（无第三方 plugin entry，装一个第三方插件后这里可启停）</div>}
+            {entries.map((e) => (
+              <div key={e.entryId} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '2px 0' }}>
+                <span>{e.disabled ? '⏸' : '✓'} {e.entryId} <span style={{ color: '#888' }}>[{e.moduleName}]</span></span>
+                {e.disabled
+                  ? <button onClick={() => void doPluginEnable(detail.name, e.entryId)} disabled={busy}>启用</button>
+                  : <button onClick={() => void doPluginDisable(detail.name, e.entryId)} disabled={busy}>停用</button>}
               </div>
             ))}
           </div>
