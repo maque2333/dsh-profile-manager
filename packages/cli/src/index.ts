@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /** dshm — DeepSeek Harness Profile Manager CLI（薄壳，全部逻辑在 core）。 */
 
-import { readFileSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
 import {
   DshmError,
@@ -42,21 +43,35 @@ function resolveName(arg: string | undefined, globalName: string | undefined): s
   return name
 }
 
-/** 解析 manager profile 里 dsh-profile-manager bundle 的来源（开发期 link 本地 / 发布期 npm）。 */
+/** 从本地路径读一个包的 name（bundle 名与包名一致）。 */
+function readPackageName(dir: string): string {
+  const pkg = JSON.parse(readFileSync(join(resolve(dir), 'package.json'), 'utf8')) as { name?: string }
+  if (typeof pkg.name !== 'string') {
+    throw new DshmError(`package.json 缺少 name：${dir}`)
+  }
+  return pkg.name
+}
+
+/**
+ * 解析 manager profile 里 dsh-profile-manager bundle 的来源：
+ * 1. `DSHM_PLUGIN` 显式指定（link:/file: 本地路径，或 npm spec）；
+ * 2. 开发期：相对 cli 位置探测 `../../plugin`（monorepo 里的 packages/plugin），存在则 link；
+ * 3. 发布期：`dsh-profile-manager@^0.1.0`（npm）。
+ */
 function resolvePlugin(): { name: string; spec: string } {
   const env = process.env.DSHM_PLUGIN
-  if (env === undefined || env === '') {
-    return { name: 'dsh-profile-manager', spec: '^0.1.0' }
-  }
-  if (env.startsWith('link:') || env.startsWith('file:')) {
-    const dir = env.slice(env.indexOf(':') + 1)
-    const pkg = JSON.parse(readFileSync(join(resolve(dir), 'package.json'), 'utf8')) as { name?: string }
-    if (typeof pkg.name !== 'string') {
-      throw new DshmError(`DSHM_PLUGIN 指向的 package.json 缺少 name：${dir}`)
+  if (env !== undefined && env !== '') {
+    if (env.startsWith('link:') || env.startsWith('file:')) {
+      const dir = env.slice(env.indexOf(':') + 1)
+      return { name: readPackageName(dir), spec: env }
     }
-    return { name: pkg.name, spec: env }
+    return { name: env, spec: env }
   }
-  throw new DshmError('DSHM_PLUGIN 只支持 link:/file: 本地路径（开发期），或留空使用发布版 dsh-profile-manager@^0.1.0')
+  const localPlugin = join(dirname(fileURLToPath(import.meta.url)), '../../plugin')
+  if (existsSync(join(localPlugin, 'package.json'))) {
+    return { name: readPackageName(localPlugin), spec: `link:${localPlugin}` }
+  }
+  return { name: 'dsh-profile-manager', spec: '^0.1.0' }
 }
 
 /** 生成内置的 manager profile 定义（dshm-profile.yaml 文本）。 */
