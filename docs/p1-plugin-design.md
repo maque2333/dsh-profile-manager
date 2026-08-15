@@ -97,8 +97,8 @@ dshm start writing              # 回 profile 层启动
 | import / export | ✅ | ✅ | ✅ | ⚠️ 阶段 0 补 |
 | restart | ✅ | ✅ | ✅ | ⚠️ 阶段 0 补 |
 | bootstrap | ✅ | — | — | —（自举边界） |
-| create / plugin list / plugin add / plugin remove | A | A | A | A |
-| plugin enable / plugin disable | B | B | B | B |
+| create / plugin list / plugin add / plugin remove | ✅ | ✅ | ✅ | ✅ |
+| plugin entries / enable / disable（热插拔） | ✅ | ✅ | ✅ | ✅ |
 
 > 表头「面板/工具」= 2/3 界面，「/profile」= 4 界面。每完成一个能力，先对着矩阵勾选，缺一处即未交付。
 
@@ -108,31 +108,27 @@ dshm start writing              # 回 profile 层启动
 |---|---|---|
 | **0：界面补齐** | 补 `/profile` 命令的 import/export/restart | ✅ 完成 |
 | **A：plugin 基础（4 界面同步）** | `create` + `plugin list`（全局/单）+ `add`/`remove` | ✅ 完成（58/58 测试全绿，CLI/面板/工具/命令全勾） |
-| **B：启停** | `enable`/`disable` | ⏸ 待决策（见下方「阶段 B/C 重新评估」） |
+| **B：热插拔（4 界面同步）** | `plugin entries` + `enable`/`disable`（静态解析 bundle patch + 写 cordis.patch.yml，HMR 热生效，跨 profile） | ✅ 完成（61/61 测试全绿） |
 | **C：store** | 插件名 → 来源解析 + 市场 UI | ⏸ 待决策（社区已有 dsh-plugin-store 完整实现） |
 
 ## 8. 阶段 B/C 重新评估（调研后新增，待人类拍板）
 
 阶段 A 落地后，调研发现两个事实改变了 B/C 的价值判断：
 
-**阶段 B（enable/disable）的粒度问题**：
-- DSH「停用」停的是 **entry**（cordis 插件行），不是 bundle；entry 列表只有运行时（`pluginInventory`）能拿到，**只对当前运行的 profile 有效**；
-- 我们的面板寄生在 manager 进程里，`ctx.loader` 是 manager 自己的——启用/停用只能针对 manager 自己（又撞自保只读）；
-- 跨 profile 启停需静态解析每个 bundle 的 `cordis.patch.yml` 提取 entry id，复杂度高、对「一个 bundle 多个 entry」的基础 bundle 语义混乱；
-- 结论：**enable/disable 天然是「单 profile 运行时」操作，与我们的「profile 视角」差异化不契合**，且 dsh-plugin-hub 已做。
+**阶段 B（热插拔）——已实现，结论反转（原「不契合」判断是误判）**：
+- DSH「停用」停的是 **entry**（cordis 插件行），写 `cordis.patch.yml` 的 `disabled`，运行实例 HMR 热生效（不重启）；
+- 之前误判「面板只能停 manager 自己」——实际上写 patch 是**文件操作**，面板可写**任意 profile** 的 patch，由目标 profile 自己的进程 HMR 热生效，与面板在哪个进程无关；
+- 已通过**静态解析第三方 bundle 的 `cordis.patch.yml`**（不依赖运行态 `pluginInventory`）拿到 entry 列表，实现**跨 profile 热插拔**；
+- 基础设施保护：内置 bundle（base/web-app/headless）的 entry 受保护、不列出（只列第三方业务插件）；
+- 结论：**跨 profile 热插拔是差异化（dsh-plugin-hub 只单 profile），已交付**。
 
 **阶段 C（store）的竞争格局**：
-- [dsh-plugin-store](https://www.npmjs.com/package/dsh-plugin-store) 已是**完整 store**（浏览/搜索/一键安装/评分/依赖图/审计）；
-- [dsh-plugin-hub](https://github.com/Noob-stupid/dsh-plugin-hub) 已有 GitHub 市场；
-- GitHub `dsh-plugin` topic 已有 **3191 个仓库**，awesome 列表在策展；
-- 结论：**store 社区已相当成熟，我们再做难有差异化**；我们的独特价值仍是「跨 profile 的 plugin 管理」（阶段 A 已交付）。
-
-**建议（三选一，待人类拍板）**：
-1. **P1 到此为止**——阶段 A（跨 profile 的 create/list/add/remove）就是我们的差异化，B/C 让给社区，直接收尾（更新文档 + 发布）；
-2. **简化做 B**——只对「正在运行的 profile」提供 entry 级启停（复用 plugin-inventory），作为面板里的顺手操作，不强行跨 profile；
-3. **坚持做 B + C**——按原计划（B 跨 profile 启停需解析 bundle patch；C 做自己的 store），投入最大。
+- [dsh-plugin-store](https://www.npmjs.com/package/dsh-plugin-store) 已是**完整 store**（浏览/搜索/一键安装/评分/依赖图/审计），但**只有 Web UI，无 CLI、无 agent 工具**；
+- [dsh-plugin-hub](https://github.com/Noob-stupid/dsh-plugin-hub) 已有 GitHub 市场（MIT，可借鉴机制）；
+- GitHub `dsh-plugin` topic 已有 **3191 个仓库**；
+- 结论：store 的 **Web UI 社区已成熟**，但 **CLI（`dshm plugin search`）+ agent 工具（`profile_plugin_search`）没人做**——这是我们可补的差异化。
 
 ## 待确认（评审时拍板）
 
-1. 阶段 B/C 按上面「三选一」走哪条？
+1. **阶段 C（store）要不要做**？建议做「CLI + agent 界面的插件搜索/安装」（借鉴 dsh-plugin-hub 的 GitHub topic 搜索机制），Web UI 商店让给社区；
 2. `create` 起步 bundles 默认 `[dsh-base]`，是否要支持 `--bundles` 一次指定多个？（阶段 A 已按默认 `[dsh-base]` 实现）
