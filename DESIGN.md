@@ -283,7 +283,7 @@ meta:                           # 可选，仅 dshm 使用，官方无视
 | M1 CLI MVP（P0） | core + cli：`list/show/import/export/delete` + `start/stop/restart/status` + `doctor`；形态分类 + 端口链 + 归档 | 本机真实环境：列出 web/cc-tui；import 建新 profile 并启动；stop；delete 归档；cc-tui 通用实例路径跑通 | 3-4 天 |
 | M2 插件形态 | plugin bundle：ctx.profileManager + 面板 + profile_* 工具 + /profile 命令；manager profile 模板 + bootstrap | **已完成**：headless 工具调用 / web 面板（curl 验）/ bootstrap 起 manager 实例全通；浏览器渲染交互待人工验证 | 3-5 天 |
 | M3 打磨与发布 | 双语 README、doctor 强化、Windows 实测、npm 发布 + topic + awesome 收录 | 2-3 个外部用户跑通并反馈（M1 成功标准） | 2-3 天 |
-| P1（后续） | profile 内 plugin 管理（透传 `dsh plugin` + 面板化 + §7.3 三档规则细化） | 与官方 plugin 命令行为一致 | 待定 |
+| P1（后续） | profile 内 plugin 管理：`create` + `plugin list/add/remove` + **跨 profile 热插拔**（entries/enable/disable）+ **store 三入口**（search/info/install），4 界面同步 | **已完成（阶段 0/A/B/C1，65/65 测试全绿，0.2.0 已发布）**；官方 webUI 插件（C2）待做 | 待定 |
 
 ## 10. 风险与对策
 

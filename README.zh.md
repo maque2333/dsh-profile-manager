@@ -62,8 +62,13 @@ dshm bootstrap             # 创建并启动 manager（Web 面板）profile
 | `dshm status [name]` | 实例状态（web：HTTP 探活；generic：进程存活） |
 | `dshm doctor` | 一致性诊断 + 崩溃残留 + 归档清单 |
 | `dshm plugin list [profile]` | 列出 plugin：无参数 = 全局汇总；带 profile = 单 profile |
+| `dshm plugin entries <profile>` | 列出可热插拔的 plugin entry（第三方 bundle） |
+| `dshm plugin enable/disable <profile> <entryId>` | 启用/停用 entry（写 patch，HMR 热生效、不重启） |
 | `dshm plugin add <profile> <pkg>` | 给 profile 安装 plugin（透传 `dsh plugin add`） |
 | `dshm plugin remove <profile> <pkg>` | 卸载 plugin（透传 `dsh plugin remove`） |
+| `dshm plugin search [关键词]` | 搜索 GitHub `dsh-plugin` 插件（商店） |
+| `dshm plugin info <来源>` | 查看单个插件详情 |
+| `dshm plugin install <profile> <来源>` | 从商店安装插件 |
 | `dshm bootstrap [--port N]` | 创建并启动 `manager` profile（Web 面板） |
 
 所有命令都遵守 `DSH_HOME`（默认 `~/.dsh`）。

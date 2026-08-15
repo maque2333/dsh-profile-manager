@@ -62,8 +62,13 @@ dshm bootstrap             # create & start the manager (web panel) profile
 | `dshm status [name]` | Instance status (web: HTTP probe; generic: process liveness) |
 | `dshm doctor` | Consistency diagnostics + crash residue + archive listing |
 | `dshm plugin list [profile]` | List plugins: global summary (no arg) or one profile's plugins |
+| `dshm plugin entries <profile>` | List hot-swappable plugin entries (third-party bundles) |
+| `dshm plugin enable/disable <profile> <entryId>` | Enable/disable an entry (writes patch, HMR hot-apply, no restart) |
 | `dshm plugin add <profile> <pkg>` | Install a plugin into a profile (forwards `dsh plugin add`) |
 | `dshm plugin remove <profile> <pkg>` | Remove a plugin (forwards `dsh plugin remove`) |
+| `dshm plugin search [keyword]` | Search GitHub `dsh-plugin` plugins (store) |
+| `dshm plugin info <source>` | Show one plugin's details |
+| `dshm plugin install <profile> <source>` | Install a plugin from the store |
 | `dshm bootstrap [--port N]` | Create + start the `manager` profile (the web panel) |
 
 All commands respect `DSH_HOME` (default `~/.dsh`).
