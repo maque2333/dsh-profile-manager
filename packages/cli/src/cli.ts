@@ -30,7 +30,15 @@ import {
   stopService,
 } from '@dsh-profile-manager/core'
 
-const VERSION = '0.1.0'
+/** 从 package.json 读版本，避免发布时忘同步。 */
+const VERSION = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../package.json'), 'utf8')) as { version?: string }
+    return pkg.version ?? '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+})()
 
 const shapeLabel = (shape: string): string =>
   shape === 'web' ? 'web' : shape === 'headless' ? 'headless(一次性)' : 'other/tui'
