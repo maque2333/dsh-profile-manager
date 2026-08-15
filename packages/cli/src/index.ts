@@ -2,7 +2,7 @@
 /** dshm — DeepSeek Harness Profile Manager CLI（薄壳，全部逻辑在 core）。 */
 
 import { readFileSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { Command } from 'commander'
 import {
   DshmError,
@@ -40,6 +40,39 @@ function resolveName(arg: string | undefined, globalName: string | undefined): s
   if (name === undefined) throw new DshmError('缺少 profile 名（命令参数或全局 --profile）')
   if (!isValidProfileName(name)) throw new DshmError(`无效的 profile 名：${name}`)
   return name
+}
+
+/** 解析 manager profile 里 dsh-profile-manager bundle 的来源（开发期 link 本地 / 发布期 npm）。 */
+function resolvePlugin(): { name: string; spec: string } {
+  const env = process.env.DSHM_PLUGIN
+  if (env === undefined || env === '') {
+    return { name: 'dsh-profile-manager', spec: '^0.1.0' }
+  }
+  if (env.startsWith('link:') || env.startsWith('file:')) {
+    const dir = env.slice(env.indexOf(':') + 1)
+    const pkg = JSON.parse(readFileSync(join(resolve(dir), 'package.json'), 'utf8')) as { name?: string }
+    if (typeof pkg.name !== 'string') {
+      throw new DshmError(`DSHM_PLUGIN 指向的 package.json 缺少 name：${dir}`)
+    }
+    return { name: pkg.name, spec: env }
+  }
+  throw new DshmError('DSHM_PLUGIN 只支持 link:/file: 本地路径（开发期），或留空使用发布版 dsh-profile-manager@^0.1.0')
+}
+
+/** 生成内置的 manager profile 定义（dshm-profile.yaml 文本）。 */
+function managerDefinition(pluginName: string, pluginSpec: string, port: number): string {
+  return `dshmProfile: 1
+name: manager
+bundles:
+  - '@deepseek-ai/dsh-base'
+  - '@deepseek-ai/dsh-web-app'
+  - '${pluginName}'
+dependencies:
+  '${pluginName}': '${pluginSpec}'
+meta:
+  description: dshm 管理器实例（Profiles as instances）
+  port: ${port}
+`
 }
 
 async function main(argv: string[]): Promise<void> {
@@ -278,6 +311,30 @@ async function main(argv: string[]): Promise<void> {
         console.log(`\n归档区（${report.archives.length}）：`)
         for (const a of report.archives) console.log(`  - ${a}`)
       }
+    })
+
+  program
+    .command('bootstrap')
+    .description('创建并启动 manager profile（唯一进程外自举：dsh-base + dsh-web-app + 本插件）')
+    .option('--port <n>', 'manager 实例端口（默认 3081 起找空）', (v) => Number(v))
+    .action(async (options: { port?: number }) => {
+      const { name: pluginName, spec: pluginSpec } = resolvePlugin()
+      const suggestedPort = options.port ?? 3081
+      importProfileFile(managerDefinition(pluginName, pluginSpec, suggestedPort), { home: home() })
+      const state = loadRuntime(home())
+      state.suggestedPorts = { ...state.suggestedPorts, manager: suggestedPort }
+      saveRuntime(home(), state)
+      const result = await startService({
+        ctx: { home: home() },
+        state,
+        profile: 'manager',
+        port: options.port,
+        timeoutMs: 30_000,
+      })
+      const r = result.record
+      console.log(`manager 已启动：${r.id}（:${r.port}，PID ${r.pid}）`)
+      console.log(`面板：http://127.0.0.1:${r.port}/profile-manager`)
+      console.log(`日志：${r.logFile}`)
     })
 
   // from: 'user'：argv 是 slice(2) 后的纯用户参数（与官方 dsh 的 parse 一致）

@@ -1,6 +1,6 @@
 # DSH Profile Manager（dshm）设计文档
 
-> 版本 0.3 · 状态：**已评审定案（M0 闭环）；M1 已完成**（core + CLI 全命令、46/46 测试全绿、真机验收通过，2026-08-15）
+> 版本 0.4 · 状态：**M0 定案 ✅；M1 完成 ✅；M2 完成 ✅**（plugin bundle + bootstrap，53/53 测试全绿，headless 工具调用 + web 面板 + bootstrap 端到端验证通过，2026-08-15）；M3（发布）未开工
 > 面向 DeepSeek Harness（dsh）0.1.0-rc.x；本工具**只消费官方 CLI 表面与 `$DSH_HOME` 文件格式**，不依赖任何 `@deepseek-ai/dsh-*` 内部 API。
 > 项目定位：**开源项目，服务 dsh 社区**。仓库：`/Users/maque/Suzume_Files/Project/dsh-profile-manager`（git 独立成库）。
 
@@ -281,7 +281,7 @@ meta:                           # 可选，仅 dshm 使用，官方无视
 |---|---|---|---|
 | M0 设计评审 | 双层模型 + Instance 概念 + 定义文件格式 + 14 项决策 | **已完成（2026-08-15）** | — |
 | M1 CLI MVP（P0） | core + cli：`list/show/import/export/delete` + `start/stop/restart/status` + `doctor`；形态分类 + 端口链 + 归档 | 本机真实环境：列出 web/cc-tui；import 建新 profile 并启动；stop；delete 归档；cc-tui 通用实例路径跑通 | 3-4 天 |
-| M2 插件形态 | plugin bundle：ctx.profileManager + 面板 + profile_* 工具 + /profile 命令；manager profile 模板 + bootstrap | 面板完成 P0 全操作；agent 能用工具管理；manager 与目标同构显示 | 3-5 天 |
+| M2 插件形态 | plugin bundle：ctx.profileManager + 面板 + profile_* 工具 + /profile 命令；manager profile 模板 + bootstrap | **已完成**：headless 工具调用 / web 面板（curl 验）/ bootstrap 起 manager 实例全通；浏览器渲染交互待人工验证 | 3-5 天 |
 | M3 打磨与发布 | 双语 README、doctor 强化、Windows 实测、npm 发布 + topic + awesome 收录 | 2-3 个外部用户跑通并反馈（M1 成功标准） | 2-3 天 |
 | P1（后续） | profile 内 plugin 管理（透传 `dsh plugin` + 面板化 + §7.3 三档规则细化） | 与官方 plugin 命令行为一致 | 待定 |
 

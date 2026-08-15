@@ -3,13 +3,13 @@
 > 每个 agent 会话结束时更新本文档；下一会话从"下一步"开始。决策不可翻案（见 DESIGN.md §11，改动需人类确认）。
 > **交接协议**：新会话开工顺序 = 读 AGENTS.md → 读本文件 → `git -C <仓库> log --oneline` 对照 → 从"下一步"第一条开始。
 
-## 当前状态（最后更新：2026-08-15，为跨会话交接整理）
+## 当前状态（最后更新：2026-08-15，M2 完成）
 
-- **阶段**：M0 ✅；**M1 完成**（core + CLI + 测试 46/46 全绿 + 真机验收通过），已同步仓库；M2/M3 未开工。
-- **仓库**：`/Users/maque/Suzume_Files/Project/dsh-profile-manager`（正式仓库，只读镜像 + git）；暂存开发地 = `/Users/maque/Suzume_Files/Project/DSH/dsh-profile-manager`（Option C，见 AGENTS.md）。
-- **git 提交**：`8e5fbd4`（M0 定案）→ `316cf44`（M1 第一版）→ `d75da67`（M1 验收补强）。远端未配置。
-- **本机可用性**：`dshm` 已通过 `npm link` 全局安装（`/Users/maque/.local/opt/node/bin/dshm` → 暂存目录 `packages/cli`）；**改代码后 `pnpm run build` 即全局生效**，无需重链。
-- **唯一未完成的人工验证**：用户终端跑 `dshm start cc-tui --foreground`（TTY 交互无法自动化）。
+- **阶段**：M0 ✅；M1 ✅（core + CLI，真机验收）；**M2 ✅ 完成**（plugin bundle + bootstrap，53/53 测试全绿，headless 工具调用 + web 面板 + bootstrap 端到端验证通过）；M3（发布）未开工。
+- **工作区**：本会话工作区已直接落在仓库目录 `/Users/maque/Suzume_Files/Project/dsh-profile-manager`（写仓库零审批；不再是旧 Option C 的「暂存目录 + 只读镜像」布局，见下方「环境事实」）。
+- **git 提交**：`8e5fbd4`（M0）→ `316cf44`（M1 第一版）→ `d75da67`（M1 验收补强）→ `4521725`（交接整理）→ M2 提交（待记）。远端未配置。
+- **本机可用性**：`dshm` 全局可用的 link 仍指向旧暂存目录 `packages/cli`；**本会话改用 `node packages/cli/lib/index.js` 直接跑**（见下方「环境事实」）。
+- **待人工验证**：① `dshm start cc-tui --foreground`（TTY）；② 真实浏览器打开 manager 面板交互（curl 已验 HTML/API/client.js，React 渲染交互待浏览器确认）。
 
 ## 真机验收证据（真实 `~/.dsh`，2026-08-15）
 
@@ -23,9 +23,12 @@
 1. 需求收敛 + 概念定案 + grilling 决策树（14 项决策，DESIGN.md §11）；
 2. 文档四件套 + git 初始化（8e5fbd4）；
 3. Option C 开发流程定案（AGENTS.md）；
-4. M1 第一版实现（316cf44）：脚手架 + core 十模块（types/paths/profiles/runtime/ports/process/probe/import/archive/doctor/service）+ cli 全命令 + 测试；
+4. M1 第一版实现（316cf44）：脚手架 + core 十模块 + cli 全命令 + 测试；
 5. M1 验收补强（d75da67）：generic/headless/多开/doctor/CLI 往返/foreground 覆盖；真机验收；
-6. `npm link` 全局安装 dshm（本机开发期可用）。
+6. `npm link` 全局安装 dshm；
+7. **M2 取证**：`docs/m2-api-contract.md` —— 逐个核实官方扩展点签名（ctx.tools/defineTool、ctx.commands、ctx.webServer、ctx.subprocess、dsh.bundle/dsh.client 契约）；
+8. **M2 实现**：`packages/plugin`（host 的 `ctx.profileManager` 服务 + 7 个 `profile_*` 工具 + `/profile` 命令 + 自保只读；`/profile-manager` 面板 = host 路由 + API + esbuild 打包的 React 前端）+ CLI `dshm bootstrap`；
+9. **M2 验证**：headless agent 真实调用 `profile_list` 返回正确结果；web 实例 curl 面板 HTML/API/client.js 全通；`dshm bootstrap` 起 manager 实例、`list` 里普通一行、优雅停止；53/53 测试全绿。
 
 ## 进行中
 
@@ -33,10 +36,8 @@
 
 ## 下一步（按优先级）
 
-1. **等用户人工验证** `dshm start cc-tui --foreground`——若反馈异常优先修；
-2. **M1 打磨**：错误文案走查；双语 README 初稿（安装/命令/定义文件格式三节）；
-3. **M2 设计**：plugin 形态（DESIGN §3.4/§9）——与 CLI 同包发布，包声明 `dsh.bundle.patch`；`ctx.profileManager` + 面板路由 + `profile_*` 工具 + `/profile` 命令 + manager profile 模板 + `dshm bootstrap`；
-4. **M3 发布清单**（已定，勿遗漏）：
+1. **人工验证**：① `dshm start cc-tui --foreground`；② 真实浏览器打开 manager 面板交互（`dshm bootstrap` 后访问 `http://127.0.0.1:<port>/profile-manager`）；
+2. **M3 发布清单**（已定，勿遗漏）：
    - `packages/cli` 的 `@dsh-profile-manager/core: workspace:*` → 版本依赖（`^0.1.0`），npm 不认 workspace 协议；
    - **core 先发布、cli 后发**（依赖顺序）；版本 0.1.0；README 注明适配 dsh 0.1.0-rc.x；
    - Windows 实测（spawn/taskkill/路径）；npm publish；GitHub 建仓 + 远端 + `dsh-plugin` topic；awesome 收录（awesome-dsh-plugin、0xsline/awesome-deepseek-harness）。
@@ -51,7 +52,13 @@
 - 官方 CLI 第一个不认识的 token 起全是 app 参数：spawn 参数必须 `dsh --profile <name>` 在前；
 - **commander 15**：`parseAsync(argv)` 必须带 `{ from: 'user' }`（argv 是 slice(2) 后的纯用户参数）；
 - **pnpm ≥11**：`pnpm-workspace.yaml` 的 allowBuilds 是**映射形式**（`esbuild: true`），不是列表；根 workspace 已配好，勿改坏；
-- 本会话沙箱：写仓库（工作区外）需 `danger-full-access` 审批（每条命令一次）；读任意路径不受限；测试/开发用临时 DSH_HOME 铁律。
+- **M2/Cordis：服务访问必须 inject**——apply 里直接 `ctx.profileManager` 会报 `cannot get property without inject`；正确姿势 = `ctx.plugin(Provider)` 提供，再 `ctx.inject(['profileManager', ...], cb)` 在消费者子插件里访问；
+- **M2/dsh 子命令坑**：`dsh --profile manager web --port N` 报 `web takes none of parent --profile`（`web` 是子命令）；正确 spawn = `dsh --profile manager --port N`（无 `web` 子命令，`--port` 是 app 参数）——core 的 `startInstance` 已是正确写法；
+- **M2/YAML scoped key**：`@scope/name` 做 dshm-profile.yaml 的 `dependencies` key 必须引号包裹 `'@scope/name': 'spec'`，否则 js-yaml 报 `bad indentation`；
+- **M2/类型增强**：panel.ts 需 `import '@deepseek-ai/dsh-host-webserver'`、command.ts 需 `import '@deepseek-ai/dsh-commands'`（side-effect 触发 declare module），否则 `ctx.webServer`/`ctx.commands` 类型不可见；
+- **M2/defineTool 输出**：宽松 `output.schema = { type: 'object', additionalProperties: true }` 推断 execute 返回 `Record<string, JsonValue>`——返回值必须 `JSON.parse(JSON.stringify(x))` 序列化（core 类型无 index signature，直接返回报类型错）；
+- **M2/官方子包 rc 通道**：npm `latest` tag = `0.0.1-rc.1`（旧占位）、`next` = `0.1.0-rc.6`（真实）；peer/dev 依赖必须写 `^0.1.0-rc.6`（与 CLI 同通道，否则混装缺服务）；
+- 本会话工作区已落在仓库目录（零审批写）；测试/开发一律临时 DSH_HOME 铁律。
 
 ## 环境事实
 
@@ -59,6 +66,8 @@
 - 真实 `~/.dsh`：profiles = web、cc-tui（dsh-cc-tui 0.1.2）；sessions 约 15 个/21MB；**含密钥，禁碰**（`.credentials.yaml`）；
 - Node v24.18.0；pnpm 11.21.0（corepack）；npm 全局 prefix = `/Users/maque/.local/opt/node`（在 PATH）；
 - 官方仓库浅克隆：`/tmp/dsh-repo`（可能过期，用前 `git -C /tmp/dsh-repo pull --depth 1`）；
+- **工作区已切到仓库目录**（`/Users/maque/Suzume_Files/Project/dsh-profile-manager`，零审批写）；`dshm` 全局 link 仍指向旧暂存目录，M2 验证用 `node packages/cli/lib/index.js` 直接跑；
+- **plugin 包开发期 name = `@dsh-profile-manager/plugin`**（M3 发布时合入 cli 包 `dsh-profile-manager`，cordis.patch.yml 的 name 同步改）；`dshm bootstrap` 用 `DSHM_PLUGIN=link:<plugin 路径>` 指定开发期 bundle 来源，留空走发布版；
 - 人类是 DSH 新手（教学语气友好，但文档/代码按专业标准）；人类已授权 Option C 开发流程。
 
 ## git 状态
