@@ -1,6 +1,6 @@
 {
   "name": "dsh-profile-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "dshm — manage DeepSeek Harness profiles as instances: CLI (dshm) + Cordis bundle (ctx.profileManager, profile_* tools, /profile command, /profile-manager panel)",
   "license": "MIT",
   "type": "module",
