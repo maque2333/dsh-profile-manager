@@ -6,6 +6,7 @@
 
 import { Service, type Context } from '@deepseek-ai/cordis'
 import {
+  DshmError,
   resolveDshHome,
   listViews,
   startService,
@@ -126,6 +127,33 @@ export class ProfileManager extends Service {
       timeoutMs: options.timeoutMs,
     })
     return { results }
+  }
+
+  async restart(name: string, options: StartProfileOptions = {}): Promise<StartResult> {
+    const self = currentProfileName()
+    if (self !== undefined && name === self) {
+      throw new DshmError(
+        `不能通过插件形态重启正在运行本管理器的 profile（${name}）——重启会先停掉面板进程自己`,
+        `用 CLI：dshm restart ${name}（CLI 是独立进程，停 manager 不影响它自己）`,
+      )
+    }
+    const ctx = this.svc()
+    let state = this.state()
+    const lastPort = state.suggestedPorts?.[name]
+      ?? Object.values(state.instances).find((rec) => rec.profile === name && rec.port !== undefined)?.port
+    try {
+      ;({ state } = await stopService({ ctx, state, profile: name }))
+    } catch (error) {
+      if (!(error instanceof DshmError) || !error.message.includes('没有登记中的实例')) throw error
+    }
+    return startService({
+      ctx,
+      state,
+      profile: name,
+      port: options.port ?? lastPort,
+      foreground: options.foreground,
+      timeoutMs: options.timeoutMs,
+    })
   }
 
   delete(name: string, options: DeleteProfileOptions = {}): DeleteResult {

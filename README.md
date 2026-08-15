@@ -96,7 +96,7 @@ meta:                           # dshm-only metadata (ignored by dsh)
 `dsh-profile-manager` is **also a Cordis bundle** — one npm package, two skins:
 
 - **CLI** (`bin: dshm`) — scripting, CI, offline rescue.
-- **Plugin** (`dsh.bundle.patch`) — a web panel at `/profile-manager`, `profile_*` model tools, and a `/profile` command.
+- **Plugin** (`dsh.bundle.patch`) — a web panel at `/profile-manager`, `profile_*` model tools, and a `/profile` command. The panel and tools cover the full CLI surface: list / show / import / export / start / stop / restart / status / delete / doctor.
 
 `dshm bootstrap` creates and starts a plain profile named `manager` (`dsh-base + dsh-web-app + dsh-profile-manager`). It shows up in `dshm list` like any other row — the manager manages itself.
 

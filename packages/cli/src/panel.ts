@@ -139,6 +139,30 @@ export function registerPanelRoutes(ctx: Context, pm: ProfileManager): void {
         if (route === '/doctor' && method === 'GET') {
           return sendJson(res, 200, { ok: true, report: await pm.doctor() })
         }
+        if (route === '/import' && method === 'POST' && typeof body === 'object' && body !== null) {
+          const imp = body as { definition?: unknown; force?: unknown; allowBuilds?: unknown }
+          if (typeof imp.definition !== 'string') {
+            return sendJson(res, 400, { ok: false, error: '缺少 definition' })
+          }
+          const spec = pm.importFile(imp.definition, {
+            force: imp.force === true,
+            allowBuilds: imp.allowBuilds === true,
+          })
+          return sendJson(res, 200, { ok: true, imported: spec.name, bundles: spec.bundles })
+        }
+        if (route === '/export' && method === 'GET' && name !== undefined) {
+          return sendJson(res, 200, { ok: true, name, definition: pm.exportText(name) })
+        }
+        if (route === '/restart' && method === 'POST' && typeof body === 'object' && body !== null) {
+          const restart = body as { name?: unknown; port?: unknown }
+          if (typeof restart.name !== 'string') {
+            return sendJson(res, 400, { ok: false, error: '缺少 name' })
+          }
+          const result = await pm.restart(restart.name, {
+            port: typeof restart.port === 'number' ? restart.port : undefined,
+          })
+          return sendJson(res, 200, { ok: true, instance: result.record.id, status: result.status })
+        }
         return sendJson(res, 404, { ok: false, error: `未知 API：${method} ${route}` })
       } catch (error) {
         if (error instanceof DshmError) {

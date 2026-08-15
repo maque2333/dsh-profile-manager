@@ -96,7 +96,7 @@ meta:                           # 仅 dshm 使用（dsh 无视）
 `dsh-profile-manager` **同时是一个 Cordis bundle**——一个 npm 包，两张皮：
 
 - **CLI**（`bin: dshm`）——脚本化、CI、离线救援。
-- **插件**（`dsh.bundle.patch`）——`/profile-manager` Web 面板、`profile_*` 模型工具、`/profile` 命令。
+- **插件**（`dsh.bundle.patch`）——`/profile-manager` Web 面板、`profile_*` 模型工具、`/profile` 命令。面板与工具覆盖完整 CLI 能力：list / show / import / export / start / stop / restart / status / delete / doctor。
 
 `dshm bootstrap` 创建并启动一个名为 `manager` 的普通 profile（`dsh-base + dsh-web-app + dsh-profile-manager`）。它在 `dshm list` 里是普通一行——**管理器管理它自己**。
 

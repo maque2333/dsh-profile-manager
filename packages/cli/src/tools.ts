@@ -159,4 +159,60 @@ export function registerProfileTools(ctx: Context, pm: ProfileManager): void {
       }
     },
   }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_import',
+    description:
+      '从 dshm-profile.yaml 定义文本安装一个 profile 及其全部包（透传官方 dsh plugin，失败整目录回滚）。'
+      + '定义文本需含 dshmProfile: 1、name、bundles；dependencies 与官方 package.json 同构。'
+      + 'force=true 覆盖已存在的 profile（有运行实例仍会拒绝）。',
+    parameters: {
+      definition: { type: 'string', required: true, description: 'dshm-profile.yaml 的完整文本' },
+      force: { type: 'boolean', description: '覆盖已存在的 profile' },
+      allowBuilds: { type: 'boolean', description: 'pnpm 拦截构建脚本时代写豁免名单后重试' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        const spec = pm.importFile(args.definition, { force: args.force, allowBuilds: args.allowBuilds })
+        return json({ ok: true, imported: spec.name, bundles: spec.bundles })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_export',
+    description: '把 profile 导出为 dshm-profile.yaml 定义文本（备份/分享/迁移）。返回定义文件的完整文本。',
+    parameters: {
+      name: { type: 'string', required: true, description: 'profile 名' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        return json({ ok: true, name: args.name, definition: pm.exportText(args.name) })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_restart',
+    description: '重启 profile：停止其全部实例，再用上次端口（或指定 port）重新启动。',
+    parameters: {
+      name: { type: 'string', required: true, description: 'profile 名' },
+      port: { type: 'number', description: '可选新端口（仅 web 形态）' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        const result = await pm.restart(args.name, { port: args.port })
+        return json({ ok: true, instance: result.record.id, status: result.status })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
 }
