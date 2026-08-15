@@ -19,6 +19,10 @@ import {
   importProfileFile,
   exportProfileText,
   parseProfileFile,
+  createProfile,
+  listAllPlugins,
+  listProfilePlugins,
+  pluginAddRemove,
   type ProfileInfo,
   type ProfileView,
   type StartResult,
@@ -26,6 +30,9 @@ import {
   type DeleteResult,
   type DoctorReport,
   type DshmProfileFile,
+  type PluginEntry,
+  type PluginSummary,
+  type PluginOpResult,
 } from '@dsh-profile-manager/core'
 
 declare module '@deepseek-ai/cordis' {
@@ -189,5 +196,21 @@ export class ProfileManager extends Service {
 
   exportText(name: string): string {
     return exportProfileText(this.home, name, this.state())
+  }
+
+  create(name: string): DshmProfileFile {
+    return createProfile(this.home, name, { log: (m: string) => this.log(m), warn: (m: string) => this.warn(m) })
+  }
+
+  pluginList(profile?: string): PluginEntry[] | PluginSummary[] {
+    return profile === undefined ? listAllPlugins(this.home) : listProfilePlugins(this.home, profile)
+  }
+
+  pluginAdd(profile: string, pkg: string): PluginOpResult {
+    return pluginAddRemove(this.home, profile, ['add', pkg], { log: (m: string) => this.log(m) })
+  }
+
+  pluginRemove(profile: string, pkg: string): PluginOpResult {
+    return pluginAddRemove(this.home, profile, ['remove', pkg], { log: (m: string) => this.log(m) })
   }
 }

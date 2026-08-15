@@ -163,6 +163,37 @@ export function registerPanelRoutes(ctx: Context, pm: ProfileManager): void {
           })
           return sendJson(res, 200, { ok: true, instance: result.record.id, status: result.status })
         }
+        if (route === '/create' && method === 'POST' && typeof body === 'object' && body !== null) {
+          const create = body as { name?: unknown }
+          if (typeof create.name !== 'string') {
+            return sendJson(res, 400, { ok: false, error: '缺少 name' })
+          }
+          const spec = pm.create(create.name)
+          return sendJson(res, 200, { ok: true, created: spec.name, bundles: spec.bundles })
+        }
+        if (route === '/plugin/list' && method === 'GET') {
+          return sendJson(res, 200, { ok: true, plugins: pm.pluginList(name) })
+        }
+        if (route === '/plugin/add' && method === 'POST' && typeof body === 'object' && body !== null) {
+          const add = body as { profile?: unknown; pkg?: unknown }
+          if (typeof add.profile !== 'string' || typeof add.pkg !== 'string') {
+            return sendJson(res, 400, { ok: false, error: '缺少 profile 或 pkg' })
+          }
+          const r = pm.pluginAdd(add.profile, add.pkg)
+          return r.code === 0
+            ? sendJson(res, 200, { ok: true, added: add.pkg, profile: add.profile })
+            : sendJson(res, 400, { ok: false, error: `安装失败（退出码 ${r.code}）`, output: r.output })
+        }
+        if (route === '/plugin/remove' && method === 'POST' && typeof body === 'object' && body !== null) {
+          const remove = body as { profile?: unknown; pkg?: unknown }
+          if (typeof remove.profile !== 'string' || typeof remove.pkg !== 'string') {
+            return sendJson(res, 400, { ok: false, error: '缺少 profile 或 pkg' })
+          }
+          const r = pm.pluginRemove(remove.profile, remove.pkg)
+          return r.code === 0
+            ? sendJson(res, 200, { ok: true, removed: remove.pkg, profile: remove.profile })
+            : sendJson(res, 400, { ok: false, error: `卸载失败（退出码 ${r.code}）`, output: r.output })
+        }
         return sendJson(res, 404, { ok: false, error: `未知 API：${method} ${route}` })
       } catch (error) {
         if (error instanceof DshmError) {

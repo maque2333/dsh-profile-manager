@@ -215,4 +215,81 @@ export function registerProfileTools(ctx: Context, pm: ProfileManager): void {
       }
     },
   }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_create',
+    description: '新建一个空 profile（默认起步 = @deepseek-ai/dsh-base）。用于从零造 profile，再往里加 plugin。',
+    parameters: {
+      name: { type: 'string', required: true, description: '新 profile 名' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        const spec = pm.create(args.name)
+        return json({ ok: true, created: spec.name, bundles: spec.bundles })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_list',
+    description:
+      '列出 plugin：不带 profile = 全局汇总（每个 plugin 被哪些 profile 引用）；'
+      + '带 profile = 该 profile 装了哪些 plugin。',
+    parameters: {
+      profile: { type: 'string', description: '可选 profile 名（省略 = 全局汇总）' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        return json({ ok: true, plugins: pm.pluginList(args.profile) })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_add',
+    description:
+      '给 profile 安装一个 plugin（透传官方 dsh plugin add，支持 npm / github: / file: / link:）。'
+      + '装包冷：运行中需重启才生效。',
+    parameters: {
+      profile: { type: 'string', required: true, description: 'profile 名' },
+      pkg: { type: 'string', required: true, description: '包 spec（npm 名 / github:owner/repo / 本地路径）' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        const r = pm.pluginAdd(args.profile, args.pkg)
+        return r.code === 0
+          ? json({ ok: true, added: args.pkg, profile: args.profile })
+          : json({ ok: false, error: `安装失败（退出码 ${r.code}）`, output: r.output })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_remove',
+    description: '从 profile 卸载一个 plugin（透传官方 dsh plugin remove）。装包冷：运行中需重启才生效。',
+    parameters: {
+      profile: { type: 'string', required: true, description: 'profile 名' },
+      pkg: { type: 'string', required: true, description: '包名' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        const r = pm.pluginRemove(args.profile, args.pkg)
+        return r.code === 0
+          ? json({ ok: true, removed: args.pkg, profile: args.profile })
+          : json({ ok: false, error: `卸载失败（退出码 ${r.code}）`, output: r.output })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
 }

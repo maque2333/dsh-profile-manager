@@ -7,12 +7,16 @@ import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
 import {
   DshmError,
+  createProfile,
   deleteProfile,
   exportProfileText,
   importProfileFile,
   isValidProfileName,
+  listAllPlugins,
+  listProfilePlugins,
   listViews,
   loadRuntime,
+  pluginAddRemove,
   readProfile,
   resolveDshHome,
   runDoctor,
@@ -326,6 +330,69 @@ async function main(argv: string[]): Promise<void> {
         console.log(`\n归档区（${report.archives.length}）：`)
         for (const a of report.archives) console.log(`  - ${a}`)
       }
+    })
+
+  program
+    .command('create <name>')
+    .description('新建空 profile（默认起步 = @deepseek-ai/dsh-base）')
+    .action((name: string) => {
+      const spec = createProfile(home(), name)
+      console.log(`已创建 profile "${spec.name}"（bundles: ${spec.bundles.join(', ')}）`)
+      console.log(`下一步：dshm plugin ${spec.name} add <pkg> 加插件，或 dshm start ${spec.name} 启动`)
+    })
+
+  const pluginCmd = program
+    .command('plugin')
+    .description('profile 内 plugin 管理（list / add / remove，与 profile 层承接上下）')
+
+  pluginCmd
+    .command('list')
+    .description('列出 plugin：不带参数 = 全局汇总；带 profile 名 = 单 profile')
+    .argument('[profile]', 'profile 名（省略 = 全局汇总）')
+    .action((profile?: string) => {
+      if (profile === undefined) {
+        const all = listAllPlugins(home())
+        if (all.length === 0) {
+          console.log('本机没有任何 plugin（用 dshm create 新建 profile，或 dshm plugin <profile> add 装插件）')
+          return
+        }
+        console.log('PLUGIN                            KIND        PROFILES')
+        for (const s of all) {
+          console.log(`${s.plugin.padEnd(32)} ${s.kind.padEnd(10)}  ${s.profiles.join(', ')}`)
+        }
+      } else {
+        const entries = listProfilePlugins(home(), profile)
+        console.log(`profile "${profile}" 的 plugin（${entries.length} 个）：`)
+        for (const e of entries) {
+          console.log(`  ✓ ${e.name}  [${e.kind}]`)
+        }
+      }
+    })
+
+  pluginCmd
+    .command('add')
+    .description('安装 plugin（透传官方 dsh plugin add，支持 npm / github: / file: / link:）')
+    .argument('<profile>', 'profile 名')
+    .argument('<pkg>', '包 spec（npm 名 / github:owner/repo / 本地路径）')
+    .action((profile: string, pkg: string) => {
+      const r = pluginAddRemove(home(), profile, ['add', pkg])
+      if (r.code !== 0) {
+        throw new DshmError(`安装失败：dsh plugin add 退出码 ${r.code}`, '检查包 spec 是否正确、pnpm 是否在 PATH')
+      }
+      console.log(`已安装 ${pkg} 到 profile "${profile}"（装包冷：若运行中需重启生效）`)
+    })
+
+  pluginCmd
+    .command('remove')
+    .description('卸载 plugin（透传官方 dsh plugin remove）')
+    .argument('<profile>', 'profile 名')
+    .argument('<pkg>', '包名')
+    .action((profile: string, pkg: string) => {
+      const r = pluginAddRemove(home(), profile, ['remove', pkg])
+      if (r.code !== 0) {
+        throw new DshmError(`卸载失败：dsh plugin remove 退出码 ${r.code}`)
+      }
+      console.log(`已卸载 ${pkg}（装包冷：若运行中需重启生效）`)
     })
 
   program

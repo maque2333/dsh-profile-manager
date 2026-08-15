@@ -1,7 +1,8 @@
 /**
  * /profile-manager 前端面板（浏览器侧，esbuild 打包成 lib/client.js）。
  * 自包含 React app：通过 /profile-manager/api/* 与 host 的 ProfileManager 服务通信。
- * 功能与 CLI 对齐：list / show / import / export / delete / start / stop / restart / status / doctor。
+ * 功能与 CLI 对齐：profile 层（list/show/import/export/create/delete/start/stop/restart/status/doctor）
+ * + plugin 层（全局/单 profile 列表 + add/remove）。
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -29,6 +30,17 @@ interface ProfileView {
   instances: InstanceView[]
 }
 
+interface PluginEntry {
+  name: string
+  kind: string
+}
+
+interface PluginSummary {
+  plugin: string
+  kind: string
+  profiles: string[]
+}
+
 async function api(path: string, options?: RequestInit): Promise<any> {
   const res = await fetch(API + path, {
     cache: 'no-store',
@@ -46,6 +58,10 @@ function App() {
   const [importForce, setImportForce] = useState(false)
   const [exported, setExported] = useState<{ name: string; definition: string } | null>(null)
   const [detail, setDetail] = useState<{ name: string; bundles: string[]; dependencies: Record<string, string>; patch: string | null } | null>(null)
+  const [createName, setCreateName] = useState('')
+  const [globalPlugins, setGlobalPlugins] = useState<PluginSummary[] | null>(null)
+  const [plugins, setPlugins] = useState<PluginEntry[]>([])
+  const [pluginPkg, setPluginPkg] = useState('')
 
   const refresh = useCallback(async () => {
     setBusy(true)
@@ -115,18 +131,74 @@ function App() {
     else setError(data.error ?? 'export 失败')
   })
 
+  const loadPlugins = async (name: string): Promise<void> => {
+    const data = await api('/plugin/list?name=' + encodeURIComponent(name))
+    setPlugins(data.ok ? data.plugins : [])
+  }
+
   const doShow = (name: string) => act(async () => {
     const data = await api('/show?name=' + encodeURIComponent(name))
-    if (data.ok) setDetail({ name: data.name, bundles: data.bundles, dependencies: data.dependencies, patch: data.patch })
-    else setError(data.error ?? 'show 失败')
+    if (data.ok) {
+      setDetail({ name: data.name, bundles: data.bundles, dependencies: data.dependencies, patch: data.patch })
+      await loadPlugins(name)
+    } else setError(data.error ?? 'show 失败')
+  })
+
+  const doCreate = () => act(async () => {
+    if (createName.trim() === '') { setError('请输入 profile 名'); return }
+    const data = await api('/create', { method: 'POST', body: JSON.stringify({ name: createName }) })
+    if (!data.ok) setError(data.error ?? 'create 失败')
+    else { setCreateName(''); setError(`已创建 profile "${data.created}"`) }
+  })
+
+  const toggleGlobalPlugins = () => act(async () => {
+    if (globalPlugins !== null) { setGlobalPlugins(null); return }
+    const data = await api('/plugin/list')
+    if (data.ok) setGlobalPlugins(data.plugins)
+    else setError(data.error ?? 'plugin list 失败')
+  })
+
+  const doPluginAdd = (profile: string) => act(async () => {
+    if (pluginPkg.trim() === '') { setError('请输入包名/spec'); return }
+    const data = await api('/plugin/add', { method: 'POST', body: JSON.stringify({ profile, pkg: pluginPkg }) })
+    if (!data.ok) setError(data.error ?? 'plugin add 失败')
+    else { setPluginPkg(''); await loadPlugins(profile) }
+  })
+
+  const doPluginRemove = (profile: string, pkg: string) => act(async () => {
+    if (!window.confirm(`确定从 "${profile}" 卸载 "${pkg}"？`)) return
+    const data = await api('/plugin/remove', { method: 'POST', body: JSON.stringify({ profile, pkg }) })
+    if (!data.ok) setError(data.error ?? 'plugin remove 失败')
+    else await loadPlugins(profile)
   })
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <button onClick={() => void refresh()} disabled={busy}>{busy ? '刷新中…' : '刷新'}</button>
         <button onClick={doctor} disabled={busy}>诊断</button>
+        <button onClick={toggleGlobalPlugins} disabled={busy}>{globalPlugins === null ? '插件总览' : '收起插件总览'}</button>
+        <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+          <input
+            value={createName}
+            onChange={(e) => setCreateName(e.target.value)}
+            placeholder="新 profile 名"
+            style={{ padding: '4px 8px' }}
+          />
+          <button onClick={doCreate} disabled={busy}>新建 profile</button>
+        </span>
       </div>
+
+      {globalPlugins !== null && (
+        <div style={{ marginBottom: 16, padding: 12, border: '1px solid rgba(128,128,128,.3)', borderRadius: 8 }}>
+          <strong>插件总览（{globalPlugins.length}）</strong>
+          {globalPlugins.map((g) => (
+            <div key={g.plugin} style={{ fontSize: 13, padding: '4px 0' }}>
+              {g.plugin} <span style={{ color: '#888' }}>[{g.kind}]</span> → {g.profiles.join(', ')}
+            </div>
+          ))}
+        </div>
+      )}
 
       <details style={{ marginBottom: 16 }}>
         <summary>导入 profile（粘贴 dshm-profile.yaml）</summary>
@@ -164,7 +236,24 @@ function App() {
           </div>
           <div style={{ fontSize: 13 }}>bundles：{detail.bundles.join(', ')}</div>
           <div style={{ fontSize: 13 }}>dependencies：{Object.keys(detail.dependencies).length === 0 ? '（无）' : JSON.stringify(detail.dependencies)}</div>
-          <div style={{ fontSize: 13 }}>patch 层：{detail.patch === null || detail.patch.trim() === '' || detail.patch === '[]' ? '（空）' : <pre style={{ margin: '4px 0 0', fontSize: 12 }}>{detail.patch}</pre>}</div>
+          <div style={{ marginTop: 8, fontSize: 13 }}>
+            <strong>plugin（{plugins.length}）：</strong>
+            <div style={{ display: 'flex', gap: 6, margin: '6px 0' }}>
+              <input
+                value={pluginPkg}
+                onChange={(e) => setPluginPkg(e.target.value)}
+                placeholder="包名/spec（npm / github:owner/repo / 本地路径）"
+                style={{ flex: 1, padding: '4px 8px' }}
+              />
+              <button onClick={() => void doPluginAdd(detail.name)} disabled={busy}>安装</button>
+            </div>
+            {plugins.map((pl) => (
+              <div key={pl.name} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '2px 0' }}>
+                <span>✓ {pl.name} <span style={{ color: '#888' }}>[{pl.kind}]</span></span>
+                <button className="danger" onClick={() => void doPluginRemove(detail.name, pl.name)} disabled={busy}>卸载</button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
