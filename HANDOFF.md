@@ -4,32 +4,32 @@
 
 ## 当前状态（最后更新：2026-08-15）
 
-- **阶段**：M0 ✅；**M1 代码完成第一版**（core + CLI + 测试全绿），已同步仓库；**真机验收部分完成**（只读通过，生命周期验收待用户跑或授权后跑）。
-- **开发位置（Option C）**：暂存目录 `/Users/maque/Suzume_Files/Project/DSH/dsh-profile-manager/`（唯一开发地）；正式仓库 `/Users/maque/Suzume_Files/Project/dsh-profile-manager` 只经 `scripts/sync-to-repo.sh` 同步。
-- **测试**：39/39 通过（含真实 dsh 的 e2e：临时 DSH_HOME 上 import→start→HTTP 探活→stop→归档）。
-- **CLI 冒烟**：真实 `~/.dsh` 只读通过（`dshm list` 正确分类 cc-tui=other/tui、web=web；`show`/`doctor` 正常）；临时 DSH_HOME 上完整用户路径（import/start/status/stop/delete）通过。
+- **阶段**：M0 ✅；**M1 完成**（core + CLI + 测试 46/46 全绿 + 真机验收通过），已同步仓库。
+- **真机验收证据**（真实 `~/.dsh`，2026-08-15）：
+  - web 形态全生命周期 ✅：`dshm start web` → 实例 web-1 起在 :3081、HTTP 探活 running → `dshm stop web-1` 优雅停止 → 无残留记录；
+  - cc-tui generic 形态自诊断路径 ✅：detach 无 TTY 启动即崩，dshm 报错并给出日志尾部（真实原因 `cc-tui requires an interactive terminal`），与设计预判一致；
+  - generic 全生命周期 ✅（临时 DSH_HOME e2e：bare profile detach 启动/存活/优雅停止 + foreground 模式登记/停止）；
+  - **唯一留给人做的事**：在用户自己的终端跑一次 `dshm start cc-tui --foreground`（TTY 交互无法自动化）。
+- **测试**：46/46（8 个套件：core 单测 6 + 真实 dsh 集成 1 + CLI 级 1）。
 
 ## 已完成（按时间倒序）
 
 1. 需求收敛 + 概念定案 + grilling 决策树（14 项决策，DESIGN.md §11）；
 2. 文档四件套 + git 初始化（提交 8e5fbd4）；
 3. Option C 开发流程定案（AGENTS.md 已登记）；
-4. **M1 第一版实现**（本会话）：
-   - 脚手架：pnpm workspace + `packages/{core,cli}` + tsc + vitest + `scripts/sync-to-repo.sh`；`packages/plugin` 占位（M2）；
-   - core（零 Cordis 依赖，仅 js-yaml）：types/paths/profiles/runtime/ports/process/probe/import/archive/doctor/service；
-   - cli（commander，bin=dshm）：list/show/import/export/delete/start/stop/restart/status/doctor + 全局 --profile；
-   - 坑：commander `parseAsync(argv)` 必须带 `{ from: 'user' }`（argv 是 slice(2)）；pnpm ≥11 的 allowBuilds 是映射形式（esbuild: true）。
+4. **M1 第一版实现**（提交 316cf44）：脚手架 + core 十模块 + cli 全命令 + 测试；
+5. **M1 验收补强**（本会话）：generic 形态 e2e、headless 拒绝、多开默认拒绝、doctor 残留诊断、CLI export→import 往返、foreground 模式——45→46 测试；真机验收（web 全生命周期 + cc-tui 自诊断）。
 
 ## 进行中
 
-- 无（等待真机验收与用户反馈）。
+- 无。
 
 ## 下一步
 
-1. **真机验收剩余项**（需人类参与或明确授权）：在真实 `~/.dsh` 上跑 `dshm start cc-tui --foreground`（generic 形态）与 web 形态的 start/stop 完整生命周期；验收后清理登记；
-2. **M1 打磨**：`dshm export` 的 CLI 路径补一次手动验证；错误文案再走查；
+1. **用户终端验证**：`dshm start cc-tui --foreground`（人工确认 TUI 正常交互）；
+2. **M1 打磨**：错误文案走查、README 初稿（双语，发布用）；
 3. **M2 设计**：plugin 形态（DESIGN §3.4/§9）——与 CLI 同包发布，声明 `dsh.bundle.patch`；
-4. **发布准备（M3）**：双语 README、Windows 实测、npm publish、`dsh-plugin` topic、awesome 收录。
+4. **发布准备（M3）**：Windows 实测、npm publish、`dsh-plugin` topic、awesome 收录。
 
 ## 已知坑（实现时对照）
 

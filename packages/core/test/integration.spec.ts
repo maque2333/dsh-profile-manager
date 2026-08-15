@@ -66,6 +66,12 @@ patch: |
     expect(state.instances[result.record.id]).toBeDefined()
   }, 120_000)
 
+  it('多开默认拒绝：已有运行实例且未显式 --port', async () => {
+    const state = loadRuntime(home)
+    await expect(startService({ ctx, state, profile: profileName }))
+      .rejects.toThrow(/已有运行中实例/)
+  }, 30_000)
+
   it('stop：优雅停止并注销', async () => {
     let state = loadRuntime(home)
     const rec = Object.values(state.instances).find((r) => r.profile === profileName)
@@ -81,4 +87,76 @@ patch: |
     expect(result.action).toBe('archived')
     expect(existsSync(join(home, 'profiles', profileName))).toBe(false)
   })
+})
+
+describe.skipIf(!hasDsh || !hasPnpm)('generic 形态与边界（临时 DSH_HOME）', () => {
+  let ghome: string
+  const gctx: ServiceContext = { home: '' }
+
+  beforeAll(() => {
+    ghome = mkdtempSync(join(tmpdir(), 'dshm-generic-'))
+    gctx.home = ghome
+  })
+
+  afterAll(async () => {
+    const state = loadRuntime(ghome)
+    for (const rec of Object.values(state.instances)) {
+      if (isAlive(rec.pid)) await stopService({ ctx: gctx, state: loadRuntime(ghome), ids: [rec.id] })
+    }
+    rmSync(ghome, { recursive: true, force: true })
+  })
+
+  it('generic 实例：无端口、进程级存活、优雅停止', async () => {
+    const spec = `dshmProfile: 1
+name: bare
+bundles:
+  - '@deepseek-ai/dsh-base'
+patch: |
+  []
+`
+    importProfileFile(spec, { home: ghome, log: () => {} })
+    let state = loadRuntime(ghome)
+    const result = await startService({ ctx: gctx, state, profile: 'bare' })
+    expect(result.record.shape).toBe('generic')
+    expect(result.record.port).toBeUndefined()
+    expect(result.status).toBe('running')
+    expect(isAlive(result.record.pid)).toBe(true)
+    state = result.state
+    const { results } = await stopService({ ctx: gctx, state, ids: [result.record.id] })
+    expect(results[0].result).toBe('graceful')
+  }, 120_000)
+
+  it('foreground 模式（generic）：登记实例并可优雅停止', async () => {
+    const state = loadRuntime(ghome)
+    const result = await startService({ ctx: gctx, state, profile: 'bare', foreground: true })
+    expect(result.record.foreground).toBe(true)
+    expect(isAlive(result.record.pid)).toBe(true)
+    const { results } = await stopService({ ctx: gctx, state: result.state, ids: [result.record.id] })
+    expect(results[0].result).toBe('graceful')
+  }, 60_000)
+
+  it('headless 形态：拒绝 start 并指引用官方命令', async () => {
+    const spec = `dshmProfile: 1
+name: once
+bundles:
+  - '@deepseek-ai/dsh-base'
+  - '@deepseek-ai/dsh-headless'
+patch: |
+  []
+`
+    importProfileFile(spec, { home: ghome, log: () => {} })
+    await expect(startService({ ctx: gctx, state: loadRuntime(ghome), profile: 'once' }))
+      .rejects.toThrow(/一次性（headless）/)
+  }, 180_000)
+
+  it('doctor：崩溃残留记录 → 警告', async () => {
+    const { runDoctor } = await import('../src/doctor.js')
+    const state = loadRuntime(ghome)
+    state.instances['ghost-1'] = {
+      id: 'ghost-1', profile: 'ghost', shape: 'generic', pid: 999_999_999,
+      startedAt: new Date().toISOString(), dshHome: ghome, logFile: '/nonexistent.log', foreground: false,
+    }
+    const report = await runDoctor(ghome, state)
+    expect(report.findings.some((f) => f.kind === 'warn' && f.message.includes('ghost-1') && f.message.includes('进程已死'))).toBe(true)
+  }, 30_000)
 })
