@@ -346,4 +346,60 @@ export function registerProfileTools(ctx: Context, pm: ProfileManager): void {
       }
     },
   }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_search',
+    description:
+      '搜索 GitHub dsh-plugin 插件（插件商店）。返回 name/source/description/stars/url，'
+      + '安装时用 source（github:owner/repo）。sort 可选 stars（默认）或 updated。',
+    parameters: {
+      keyword: { type: 'string', description: '搜索关键词（空 = 热门插件）' },
+      sort: { type: 'string', description: '排序：stars（默认）或 updated' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        const plugins = await pm.pluginSearch(args.keyword ?? '', args.sort === 'updated' ? 'updated' : 'stars')
+        return json({ ok: true, plugins })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_info',
+    description: '查看单个插件的详情（source 为 github:owner/repo 或 owner/repo）。',
+    parameters: {
+      source: { type: 'string', required: true, description: '插件来源（github:owner/repo）' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        return json({ ok: true, plugin: await pm.pluginInfo(args.source) })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'profile_plugin_install',
+    description: '安装一个插件到 profile（透传 dsh plugin add github:owner/repo）。装包冷：运行中需重启生效。',
+    parameters: {
+      profile: { type: 'string', required: true, description: '目标 profile 名' },
+      source: { type: 'string', required: true, description: '插件来源（github:owner/repo，用 profile_plugin_search 查）' },
+    },
+    output: { schema: OUTPUT, render: renderValue },
+    async execute(args) {
+      try {
+        const r = pm.pluginInstall(args.profile, args.source)
+        return r.code === 0
+          ? json({ ok: true, installed: args.source, profile: args.profile })
+          : json({ ok: false, error: `安装失败（退出码 ${r.code}）`, output: r.output })
+      } catch (error) {
+        return json(toError(error))
+      }
+    },
+  }))
 }

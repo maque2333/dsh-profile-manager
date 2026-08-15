@@ -213,6 +213,26 @@ export function registerPanelRoutes(ctx: Context, pm: ProfileManager): void {
           pm.pluginDisable(disable.profile, disable.entryId)
           return sendJson(res, 200, { ok: true, disabled: disable.entryId, profile: disable.profile })
         }
+        if (route === '/plugin/search' && method === 'GET') {
+          const keyword = url.searchParams.get('keyword') ?? ''
+          const sort = url.searchParams.get('sort') === 'updated' ? 'updated' : 'stars'
+          return sendJson(res, 200, { ok: true, plugins: await pm.pluginSearch(keyword, sort) })
+        }
+        if (route === '/plugin/info' && method === 'GET') {
+          const source = url.searchParams.get('source')
+          if (source === null) return sendJson(res, 400, { ok: false, error: '缺少 source' })
+          return sendJson(res, 200, { ok: true, plugin: await pm.pluginInfo(source) })
+        }
+        if (route === '/plugin/install' && method === 'POST' && typeof body === 'object' && body !== null) {
+          const install = body as { profile?: unknown; source?: unknown }
+          if (typeof install.profile !== 'string' || typeof install.source !== 'string') {
+            return sendJson(res, 400, { ok: false, error: '缺少 profile 或 source' })
+          }
+          const r = pm.pluginInstall(install.profile, install.source)
+          return r.code === 0
+            ? sendJson(res, 200, { ok: true, installed: install.source, profile: install.profile })
+            : sendJson(res, 400, { ok: false, error: `安装失败（退出码 ${r.code}）`, output: r.output })
+        }
         return sendJson(res, 404, { ok: false, error: `未知 API：${method} ${route}` })
       } catch (error) {
         if (error instanceof DshmError) {

@@ -25,6 +25,11 @@ import {
   listProfileEntries,
   pluginAddRemove,
   setEntryDisabled,
+  searchPlugins,
+  pluginDetails,
+  installPlugin,
+  type StorePlugin,
+  type StoreSort,
   type ProfileInfo,
   type ProfileView,
   type StartResult,
@@ -227,5 +232,17 @@ export class ProfileManager extends Service {
 
   pluginDisable(profile: string, entryId: string): void {
     setEntryDisabled(this.home, profile, entryId, true)
+  }
+
+  pluginSearch(keyword: string, sort?: StoreSort): Promise<StorePlugin[]> {
+    return searchPlugins(keyword, { sort })
+  }
+
+  pluginInfo(source: string): Promise<StorePlugin> {
+    return pluginDetails(source)
+  }
+
+  pluginInstall(profile: string, source: string): PluginOpResult {
+    return installPlugin(this.home, profile, source, { log: (m: string) => this.log(m) })
   }
 }

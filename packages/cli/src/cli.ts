@@ -19,6 +19,9 @@ import {
   loadRuntime,
   pluginAddRemove,
   setEntryDisabled,
+  searchPlugins,
+  pluginDetails,
+  installPlugin,
   readProfile,
   resolveDshHome,
   runDoctor,
@@ -431,6 +434,54 @@ async function main(argv: string[]): Promise<void> {
     .action((profile: string, entryId: string) => {
       setEntryDisabled(home(), profile, entryId, true)
       console.log(`已停用 ${entryId}（运行中则 HMR 热生效，否则下次启动生效）`)
+    })
+
+  pluginCmd
+    .command('search')
+    .description('搜索 GitHub dsh-plugin 插件（默认按 star 降序）')
+    .argument('[keyword]', '搜索关键词（省略 = 列出热门插件）')
+    .option('--sort <stars|updated>', '排序：stars（默认）或 updated', 'stars')
+    .option('--limit <n>', '返回条数（默认 20）', (v) => Number(v))
+    .action(async (keyword: string | undefined, options: { sort?: string; limit?: number }) => {
+      const plugins = await searchPlugins(keyword ?? '', {
+        sort: options.sort === 'updated' ? 'updated' : 'stars',
+        perPage: options.limit ?? 20,
+      })
+      if (plugins.length === 0) {
+        console.log('没有找到插件（GitHub 访问受限或关键词无匹配）')
+        return
+      }
+      for (const p of plugins) {
+        console.log(`★${String(p.stars).padEnd(7)} ${p.name.padEnd(30)} ${(p.description || '').slice(0, 55)}`)
+        console.log(`         ${p.source}`)
+      }
+    })
+
+  pluginCmd
+    .command('info')
+    .description('查看单个插件详情（github:owner/repo 或 owner/repo）')
+    .argument('<source>', '插件来源')
+    .action(async (source: string) => {
+      const p = await pluginDetails(source)
+      console.log(`名称: ${p.name}`)
+      console.log(`来源: ${p.source}`)
+      console.log(`star: ${p.stars}`)
+      console.log(`描述: ${p.description}`)
+      console.log(`地址: ${p.url}`)
+      console.log(`更新: ${p.updatedAt}`)
+    })
+
+  pluginCmd
+    .command('install')
+    .description('安装插件到 profile（透传 dsh plugin add github:owner/repo）')
+    .argument('<profile>', 'profile 名')
+    .argument('<source>', '插件来源（github:owner/repo，用 plugin search 查）')
+    .action((profile: string, source: string) => {
+      const r = installPlugin(home(), profile, source)
+      if (r.code !== 0) {
+        throw new DshmError(`安装失败：dsh plugin add 退出码 ${r.code}`, '检查来源格式（github:owner/repo）、pnpm 是否在 PATH')
+      }
+      console.log(`已安装 ${source} 到 profile "${profile}"（装包冷：若运行中需重启生效）`)
     })
 
   program

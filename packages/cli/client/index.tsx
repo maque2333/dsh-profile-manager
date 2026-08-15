@@ -47,6 +47,15 @@ interface PluginSummary {
   profiles: string[]
 }
 
+interface StorePlugin {
+  name: string
+  source: string
+  description: string
+  stars: number
+  url: string
+  updatedAt: string
+}
+
 async function api(path: string, options?: RequestInit): Promise<any> {
   const res = await fetch(API + path, {
     cache: 'no-store',
@@ -69,6 +78,10 @@ function App() {
   const [plugins, setPlugins] = useState<PluginEntry[]>([])
   const [pluginPkg, setPluginPkg] = useState('')
   const [entries, setEntries] = useState<EntryInfo[]>([])
+  const [storeKeyword, setStoreKeyword] = useState('')
+  const [storeSort, setStoreSort] = useState('stars')
+  const [storeResults, setStoreResults] = useState<StorePlugin[] | null>(null)
+  const [storeProfile, setStoreProfile] = useState('')
 
   const refresh = useCallback(async () => {
     setBusy(true)
@@ -197,12 +210,33 @@ function App() {
     else await loadEntries(profile)
   })
 
+  const doSearch = () => act(async () => {
+    const params = new URLSearchParams({ keyword: storeKeyword, sort: storeSort })
+    const data = await api('/plugin/search?' + params.toString())
+    if (data.ok) setStoreResults(data.plugins)
+    else setError(data.error ?? 'search 失败')
+  })
+
+  const toggleStore = () => act(async () => {
+    if (storeResults !== null) { setStoreResults(null); return }
+    await doSearch()
+  })
+
+  const doInstall = (source: string) => act(async () => {
+    const target = storeProfile.trim()
+    if (target === '') { setError('请先填「安装目标 profile 名」（已有 profile 名，或新建一个）'); return }
+    const data = await api('/plugin/install', { method: 'POST', body: JSON.stringify({ profile: target, source }) })
+    if (!data.ok) setError(data.error ?? 'install 失败')
+    else setError(`已安装 ${source} 到 ${target}（装包冷，重启生效）`)
+  })
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <button onClick={() => void refresh()} disabled={busy}>{busy ? '刷新中…' : '刷新'}</button>
         <button onClick={doctor} disabled={busy}>诊断</button>
         <button onClick={toggleGlobalPlugins} disabled={busy}>{globalPlugins === null ? '插件总览' : '收起插件总览'}</button>
+        <button onClick={toggleStore} disabled={busy}>{storeResults === null ? '插件商店' : '收起商店'}</button>
         <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
           <input
             value={createName}
@@ -220,6 +254,39 @@ function App() {
           {globalPlugins.map((g) => (
             <div key={g.plugin} style={{ fontSize: 13, padding: '4px 0' }}>
               {g.plugin} <span style={{ color: '#888' }}>[{g.kind}]</span> → {g.profiles.join(', ')}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {storeResults !== null && (
+        <div style={{ marginBottom: 16, padding: 12, border: '1px solid rgba(128,128,128,.3)', borderRadius: 8 }}>
+          <strong>插件商店（GitHub dsh-plugin）</strong>
+          <div style={{ display: 'flex', gap: 6, margin: '6px 0', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              value={storeKeyword}
+              onChange={(e) => setStoreKeyword(e.target.value)}
+              placeholder="搜索关键词（如 news）"
+              style={{ flex: 1, padding: '4px 8px', minWidth: 160 }}
+            />
+            <select value={storeSort} onChange={(e) => setStoreSort(e.target.value)} style={{ padding: '4px' }}>
+              <option value="stars">按 star</option>
+              <option value="updated">按最新</option>
+            </select>
+            <button onClick={doSearch} disabled={busy}>搜索</button>
+            <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+              安装到
+              <input value={storeProfile} onChange={(e) => setStoreProfile(e.target.value)} placeholder="profile 名" style={{ width: 110, padding: '4px 8px' }} />
+            </span>
+          </div>
+          {storeResults.map((p) => (
+            <div key={p.source} style={{ fontSize: 13, padding: '6px 0', borderBottom: '1px solid rgba(128,128,128,.15)' }}>
+              <div>
+                <strong>{p.name}</strong> <span style={{ color: '#888' }}>★{p.stars}</span>{' '}
+                <span style={{ color: '#888' }}>{p.source}</span>
+              </div>
+              {p.description !== '' && <div style={{ color: '#666' }}>{p.description.slice(0, 100)}</div>}
+              <button onClick={() => void doInstall(p.source)} disabled={busy}>安装</button>
             </div>
           ))}
         </div>
