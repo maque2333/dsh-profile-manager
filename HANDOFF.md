@@ -7,9 +7,9 @@
 
 - **阶段**：M0 ✅；M1 ✅（core + CLI，真机验收）；**M2 ✅ 完成**（plugin bundle + bootstrap，53/53 测试全绿，headless 工具调用 + web 面板 + bootstrap 端到端验证通过）；M3（发布）未开工。
 - **工作区**：本会话工作区已直接落在仓库目录 `/Users/maque/Suzume_Files/Project/dsh-profile-manager`（写仓库零审批；不再是旧 Option C 的「暂存目录 + 只读镜像」布局，见下方「环境事实」）。
-- **git 提交**：`8e5fbd4`（M0）→ `316cf44`（M1 第一版）→ `d75da67`（M1 验收补强）→ `4521725`（交接整理）→ M2 提交（待记）。远端未配置。
-- **本机可用性**：`dshm` 全局可用的 link 仍指向旧暂存目录 `packages/cli`；**本会话改用 `node packages/cli/lib/index.js` 直接跑**（见下方「环境事实」）。
-- **待人工验证**：① `dshm start cc-tui --foreground`（TTY）；② 真实浏览器打开 manager 面板交互（curl 已验 HTML/API/client.js，React 渲染交互待浏览器确认）。
+- **git 提交**：`8e5fbd4`（M0）→ `316cf44`（M1 第一版）→ `d75da67`（M1 验收补强）→ `4521725`（交接整理）→ `5552190`（M2 plugin bundle + bootstrap）→ `aa44a21`（bootstrap 本地 plugin 自动探测）。远端未配置。
+- **本机可用性**：`dshm` 全局 link 已重新指向当前仓库 `packages/cli`（零审批会话内用 `danger-full-access` 手动 relink）；**改代码后 `pnpm --filter dsh-profile-manager build` 即全局生效**。
+- **人工验证（已全部通过 ✅）**：① `dshm start cc-tui --foreground` 运行正常；② 用户真实环境跑 `dshm bootstrap` 创建 manager profile 且 webUI 面板运行正常（浏览器渲染交互确认）。
 
 ## 真机验收证据（真实 `~/.dsh`，2026-08-15）
 
@@ -66,8 +66,8 @@
 - 真实 `~/.dsh`：profiles = web、cc-tui（dsh-cc-tui 0.1.2）；sessions 约 15 个/21MB；**含密钥，禁碰**（`.credentials.yaml`）；
 - Node v24.18.0；pnpm 11.21.0（corepack）；npm 全局 prefix = `/Users/maque/.local/opt/node`（在 PATH）；
 - 官方仓库浅克隆：`/tmp/dsh-repo`（可能过期，用前 `git -C /tmp/dsh-repo pull --depth 1`）；
-- **工作区已切到仓库目录**（`/Users/maque/Suzume_Files/Project/dsh-profile-manager`，零审批写）；`dshm` 全局 link 仍指向旧暂存目录，M2 验证用 `node packages/cli/lib/index.js` 直接跑；
-- **plugin 包开发期 name = `@dsh-profile-manager/plugin`**（M3 发布时合入 cli 包 `dsh-profile-manager`，cordis.patch.yml 的 name 同步改）；`dshm bootstrap` 用 `DSHM_PLUGIN=link:<plugin 路径>` 指定开发期 bundle 来源，留空走发布版；
+- **工作区已切到仓库目录**（`/Users/maque/Suzume_Files/Project/dsh-profile-manager`，零审批写）；`dshm` 全局 link 已重新指向本仓库 `packages/cli`（旧暂存目录 `.../Project/DSH/dsh-profile-manager` 已废弃）；
+- **plugin 包开发期 name = `@dsh-profile-manager/plugin`**（M3 发布时合入 cli 包 `dsh-profile-manager`，cordis.patch.yml 的 name 同步改）；`dshm bootstrap` 开发期自动探测 `../../plugin` 并 link（也可 `DSHM_PLUGIN=link:<路径>` 覆盖），发布期走 `dsh-profile-manager@^0.1.0`；
 - 人类是 DSH 新手（教学语气友好，但文档/代码按专业标准）；人类已授权 Option C 开发流程。
 
 ## git 状态
