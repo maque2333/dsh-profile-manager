@@ -1,4 +1,4 @@
-/** CLI 级 e2e：spawn 真实 dshm 二进制（lib/index.js）。依赖先 build（根 check 脚本保证顺序）。 */
+/** CLI 级 e2e：spawn 真实 dshm 二进制（lib/cli.js）。依赖先 build（根 check 脚本保证顺序）。 */
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 
-const cliPath = fileURLToPath(new URL('../lib/index.js', import.meta.url))
+const cliPath = fileURLToPath(new URL('../lib/cli.js', import.meta.url))
 const hasCli = existsSync(cliPath)
 
 let dirs: string[] = []

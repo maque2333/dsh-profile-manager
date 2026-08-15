@@ -2,5 +2,5 @@
 # 本行 id 供后续 bundle 层与用户 cordis.patch.yml 寻址；行顺序不影响加载（激活由服务依赖驱动）。
 - insert:
     - id: dsh-profile-manager
-      name: '@dsh-profile-manager/plugin'
+      name: 'dsh-profile-manager'
       config: {}
