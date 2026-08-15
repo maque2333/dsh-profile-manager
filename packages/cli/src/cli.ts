@@ -496,10 +496,11 @@ async function main(argv: string[]): Promise<void> {
     .command('bootstrap')
     .description('创建并启动 manager profile（唯一进程外自举：dsh-base + dsh-web-app + 本插件）')
     .option('--port <n>', 'manager 实例端口（默认 3081 起找空）', (v) => Number(v))
-    .action(async (options: { port?: number }) => {
+    .option('--force', '覆盖已存在的 manager profile（运行中仍会拒绝）')
+    .action(async (options: { port?: number; force?: boolean }) => {
       const { name: pluginName, spec: pluginSpec } = resolvePlugin()
       const suggestedPort = options.port ?? 3081
-      importProfileFile(managerDefinition(pluginName, pluginSpec, suggestedPort), { home: home() })
+      importProfileFile(managerDefinition(pluginName, pluginSpec, suggestedPort), { home: home(), force: options.force === true })
       const state = loadRuntime(home())
       state.suggestedPorts = { ...state.suggestedPorts, manager: suggestedPort }
       saveRuntime(home(), state)
