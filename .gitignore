@@ -1,0 +1,11 @@
+# dependencies / build output
+node_modules/
+packages/*/node_modules/
+packages/*/lib/
+*.tsbuildinfo
+
+# local agent session skills (auto-discovered by dsh; not part of the published tool)
+/.dsh/
+
+# OS noise
+.DS_Store
