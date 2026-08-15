@@ -1,0 +1,20 @@
+{
+  "name": "dsh-profile-manager-root",
+  "private": true,
+  "version": "0.1.0",
+  "description": "DSH Profile Manager (dshm) — manage DeepSeek Harness profiles as instances",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "vitest run",
+    "check": "pnpm run build && pnpm run test",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

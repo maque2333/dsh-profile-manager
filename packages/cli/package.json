@@ -1,0 +1,28 @@
+{
+  "name": "dsh-profile-manager",
+  "version": "0.1.0",
+  "description": "dshm — manage DeepSeek Harness profiles as instances: list, import, start, stop, status, delete",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "dshm": "lib/index.js"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": ["lib"],
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "dependencies": {
+    "@dsh-profile-manager/core": "workspace:*",
+    "commander": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -26,6 +26,14 @@
 - 读任意路径不受限（`~/.dsh`、`/tmp/dsh-repo` 等均可读）；
 - 若人类把 Web GUI 工作区切到仓库目录并新开会话，则该会话写仓库零审批。
 
+## Option C 开发流程（M1 已启用，2026-08-15 人类确认）
+
+- **暂存目录 = 唯一开发地**：本工作区下的 `dsh-profile-manager/`（即含本文件的目录）。代码、测试、构建、git 外的所有操作都在这里完成（零审批）；
+- **正式仓库 = 只读镜像**：`/Users/maque/Suzume_Files/Project/dsh-profile-manager` 只接受 `scripts/sync-to-repo.sh` 的全量同步写入；任何人不得直接改仓库文件（防漂移）；
+- **同步时机**：每个模块完成或每轮工作结束时，用 `danger-full-access` 执行一次 `scripts/sync-to-repo.sh "<commit message>"`（rsync --delete 全量镜像 + 汇报差异 + git add/commit）；
+- **代码禁止硬编码仓库绝对路径**：一律 `process.cwd()` / 环境变量 / 相对路径；`DSH_HOME` 一律从 `resolveDshHome()` 解析；
+- **真实 `~/.dsh` 禁碰**：所有 dsh/dshm 子进程与测试必须显式传 `DSH_HOME`（临时目录）。
+
 ## 当前阶段（见 HANDOFF.md 为准）
 
 - M0 设计评审已完成（14 项决策定案）；M1（core + CLI）待开工。

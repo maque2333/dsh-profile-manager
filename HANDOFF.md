@@ -4,35 +4,32 @@
 
 ## 当前状态（最后更新：2026-08-15）
 
-- **阶段**：M0 设计评审 ✅ 已完成（14 项决策定案，grilling 全流程走完）；**M1（core + CLI）未开工**。
-- **仓库**：`/Users/maque/Suzume_Files/Project/dsh-profile-manager`（git 已初始化，见"git 状态"）。
-- **最新提交**：`chore: M0 设计定案 + 交接文档初始化`（预计本会话末提交，若未见此提交说明待办）。
+- **阶段**：M0 ✅；**M1 代码完成第一版**（core + CLI + 测试全绿），已同步仓库；**真机验收部分完成**（只读通过，生命周期验收待用户跑或授权后跑）。
+- **开发位置（Option C）**：暂存目录 `/Users/maque/Suzume_Files/Project/DSH/dsh-profile-manager/`（唯一开发地）；正式仓库 `/Users/maque/Suzume_Files/Project/dsh-profile-manager` 只经 `scripts/sync-to-repo.sh` 同步。
+- **测试**：39/39 通过（含真实 dsh 的 e2e：临时 DSH_HOME 上 import→start→HTTP 探活→stop→归档）。
+- **CLI 冒烟**：真实 `~/.dsh` 只读通过（`dshm list` 正确分类 cc-tui=other/tui、web=web；`show`/`doctor` 正常）；临时 DSH_HOME 上完整用户路径（import/start/status/stop/delete）通过。
 
 ## 已完成（按时间倒序）
 
-1. 需求收敛：P0 = 显示 profile / 启动关闭 / 文件导入删除；P1 = profile 内 plugin 管理；
-2. 概念定案：Profile（定义，官方概念）vs Instance（运行，dshm 新概念，标识 `<profile>-<n>`）；
-3. grilling 决策树走完 12 问 + 衍生项，14 项决策写入 DESIGN.md §11；
-4. 文档四件套：DESIGN.md（v0.2 定案版）、AGENTS.md（项目守则）、HANDOFF.md（本文档）、.gitignore。
+1. 需求收敛 + 概念定案 + grilling 决策树（14 项决策，DESIGN.md §11）；
+2. 文档四件套 + git 初始化（提交 8e5fbd4）；
+3. Option C 开发流程定案（AGENTS.md 已登记）；
+4. **M1 第一版实现**（本会话）：
+   - 脚手架：pnpm workspace + `packages/{core,cli}` + tsc + vitest + `scripts/sync-to-repo.sh`；`packages/plugin` 占位（M2）；
+   - core（零 Cordis 依赖，仅 js-yaml）：types/paths/profiles/runtime/ports/process/probe/import/archive/doctor/service；
+   - cli（commander，bin=dshm）：list/show/import/export/delete/start/stop/restart/status/doctor + 全局 --profile；
+   - 坑：commander `parseAsync(argv)` 必须带 `{ from: 'user' }`（argv 是 slice(2)）；pnpm ≥11 的 allowBuilds 是映射形式（esbuild: true）。
 
 ## 进行中
 
-- 无（M1 待开工）。
+- 无（等待真机验收与用户反馈）。
 
-## 下一步（M1 开工清单，按序）
+## 下一步
 
-1. **脚手架**：pnpm workspace + `packages/{core,cli,plugin}` 骨架 + tsc 配置 + vitest 配置 + npm 脚本（build/check/test）；
-2. **core 模块**（按依赖序实现，每个配 vitest 单测）：
-   a. `profiles.ts` —— 读 `$DSH_HOME/profiles/*/package.json`（bundles/dependencies）、cordis.patch.yml 摘要、形态分类（web/headless/generic）；
-   b. `runtime.ts` —— runtime.yaml 读写（instances key=`<profile>-<n>`）、写失败降级；
-   c. `ports.ts` —— 端口链（--port > 上次 > meta.port > 3081 找空，bind 测试）；
-   d. `process.ts` —— spawn（web detach / generic detach+foreground 两模式）、SIGTERM→8s→SIGKILL 序列、PID 存活；
-   e. `probe.ts` —— HTTP 探活（web）/ kill(pid,0)（generic）；
-   f. `import.ts` —— dshm-profile.yaml 解析（js-yaml）+ 官方三件套生成 + 预检（pnpm/名称冲突/内置三件套剔除）+ 透传 `dsh plugin install` + `--dump-config` 验证 + 失败回滚；
-   g. `archive.ts` —— delete 归档/--purge 语义；
-3. **cli 命令**（commander）：list/show/import/export/delete/start/stop/restart/status/doctor；
-4. **集成测试**（临时 DSH_HOME 铁律）：import→start→探活→stop→delete 全流程；
-5. 真机验收（需人类参与）：本机 web + cc-tui 两形态跑通。
+1. **真机验收剩余项**（需人类参与或明确授权）：在真实 `~/.dsh` 上跑 `dshm start cc-tui --foreground`（generic 形态）与 web 形态的 start/stop 完整生命周期；验收后清理登记；
+2. **M1 打磨**：`dshm export` 的 CLI 路径补一次手动验证；错误文案再走查；
+3. **M2 设计**：plugin 形态（DESIGN §3.4/§9）——与 CLI 同包发布，声明 `dsh.bundle.patch`；
+4. **发布准备（M3）**：双语 README、Windows 实测、npm publish、`dsh-plugin` topic、awesome 收录。
 
 ## 已知坑（实现时对照）
 
