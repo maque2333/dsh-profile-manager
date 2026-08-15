@@ -34,9 +34,11 @@
 - **代码禁止硬编码仓库绝对路径**：一律 `process.cwd()` / 环境变量 / 相对路径；`DSH_HOME` 一律从 `resolveDshHome()` 解析；
 - **真实 `~/.dsh` 禁碰**：所有 dsh/dshm 子进程与测试必须显式传 `DSH_HOME`（临时目录）。
 
-## 当前阶段（见 HANDOFF.md 为准）
+## 当前阶段（以 HANDOFF.md 为准）
 
-- M0 设计评审已完成（14 项决策定案）；M1（core + CLI）待开工。
+- M0 ✅（14 项决策定案）；**M1 ✅ 完成**（core + CLI，46/46 测试全绿，真机验收通过，仓库提交 `316cf44`/`d75da67`）；M2（plugin 形态）/M3（发布）未开工；
+- 本机 `dshm` 已 `npm link` 全局可用（指向暂存目录 `packages/cli`；改代码后 `pnpm run build` 即生效）；
+- 唯一未完成的人工验证：用户在终端跑 `dshm start cc-tui --foreground`。
 
 ## 决策速查（防翻案，详见 DESIGN.md §11）
 

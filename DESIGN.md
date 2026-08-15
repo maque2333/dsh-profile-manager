@@ -1,6 +1,6 @@
 # DSH Profile Manager（dshm）设计文档
 
-> 版本 0.2 · 状态：**已评审定案（M0 闭环，2026-08-15）**
+> 版本 0.3 · 状态：**已评审定案（M0 闭环）；M1 已完成**（core + CLI 全命令、46/46 测试全绿、真机验收通过，2026-08-15）
 > 面向 DeepSeek Harness（dsh）0.1.0-rc.x；本工具**只消费官方 CLI 表面与 `$DSH_HOME` 文件格式**，不依赖任何 `@deepseek-ai/dsh-*` 内部 API。
 > 项目定位：**开源项目，服务 dsh 社区**。仓库：`/Users/maque/Suzume_Files/Project/dsh-profile-manager`（git 独立成库）。
 
