@@ -58,6 +58,7 @@
 - **M2/类型增强**：panel.ts 需 `import '@deepseek-ai/dsh-host-webserver'`、command.ts 需 `import '@deepseek-ai/dsh-commands'`（side-effect 触发 declare module），否则 `ctx.webServer`/`ctx.commands` 类型不可见；
 - **M2/defineTool 输出**：宽松 `output.schema = { type: 'object', additionalProperties: true }` 推断 execute 返回 `Record<string, JsonValue>`——返回值必须 `JSON.parse(JSON.stringify(x))` 序列化（core 类型无 index signature，直接返回报类型错）；
 - **M2/官方子包 rc 通道**：npm `latest` tag = `0.0.1-rc.1`（旧占位）、`next` = `0.1.0-rc.6`（真实）；peer/dev 依赖必须写 `^0.1.0-rc.6`（与 CLI 同通道，否则混装缺服务）；
+- **M3/Windows 审查结论**：代码已跨平台（`isWindows()` + `taskkill /T /F` + `windowsHide: true` + `isValidProfileName` 拒绝 `\` + 全程无 `shell: true`）；**潜在风险**——Windows 下 npm 全局 bin 是 `.cmd` shim，`spawn('dsh')`/`spawnSync('pnpm')` 不带 `shell:true` 可能找不到 `.cmd`，需真实 Windows 实测（本机 macOS 无法测），必要时改用 cross-spawn 或显式 `.cmd`；不阻塞 npm 发布，仅影响 README 的「Windows 支持」声明；
 - 本会话工作区已落在仓库目录（零审批写）；测试/开发一律临时 DSH_HOME 铁律。
 
 ## 环境事实
@@ -67,10 +68,10 @@
 - Node v24.18.0；pnpm 11.21.0（corepack）；npm 全局 prefix = `/Users/maque/.local/opt/node`（在 PATH）；
 - 官方仓库浅克隆：`/tmp/dsh-repo`（可能过期，用前 `git -C /tmp/dsh-repo pull --depth 1`）；
 - **工作区已切到仓库目录**（`/Users/maque/Suzume_Files/Project/dsh-profile-manager`，零审批写）；`dshm` 全局 link 已重新指向本仓库 `packages/cli`（旧暂存目录 `.../Project/DSH/dsh-profile-manager` 已废弃）；
-- **plugin 包开发期 name = `@dsh-profile-manager/plugin`**（M3 发布时合入 cli 包 `dsh-profile-manager`，cordis.patch.yml 的 name 同步改）；`dshm bootstrap` 开发期自动探测 `../../plugin` 并 link（也可 `DSHM_PLUGIN=link:<路径>` 覆盖），发布期走 `dsh-profile-manager@^0.1.0`；
+- **M3 已合入**：`packages/plugin` 已并入 `packages/cli`（`dsh-profile-manager` 一个包同时是 CLI `lib/cli.js` + bundle `lib/index.js`，`cordis.patch.yml` 的 name = `dsh-profile-manager`）；`dshm bootstrap` 开发期自动 link 本地包自己（探测 `../`），发布期走 `dsh-profile-manager@^0.1.0`；
 - 人类是 DSH 新手（教学语气友好，但文档/代码按专业标准）；人类已授权 Option C 开发流程。
 
 ## git 状态
 
-- 仓库：`/Users/maque/Suzume_Files/Project/dsh-profile-manager`；分支 main；远端未配置（M3 时人类建 GitHub 仓库后添加）；
+- 仓库：`/Users/maque/Suzume_Files/Project/dsh-profile-manager`；分支 main；远端 `origin` = `https://github.com/maque2333/dsh-profile-manager.git`（已 add，push 待 PAT）；git 走代理 `http://127.0.0.1:7890`（`http.proxy`/`https.proxy` 已配到仓库 `.git/config`）；
 - 约定：conventional commits；`pnpm run check` 通过才提交；不提交 node_modules/构建产物（lib 已 gitignore，但 rsync 同步仍会带过去——仓库里存在未跟踪的 lib，正常）。
