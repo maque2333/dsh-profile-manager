@@ -3,11 +3,11 @@
 > 每个 agent 会话结束时更新本文档；下一会话从"下一步"开始。决策不可翻案（见 DESIGN.md §11，改动需人类确认）。
 > **交接协议**：新会话开工顺序 = 读 AGENTS.md → 读本文件 → `git -C <仓库> log --oneline` 对照 → 从"下一步"第一条开始。
 
-## 当前状态（最后更新：2026-08-15，P1 阶段 A/B 完成）
+## 当前状态（最后更新：2026-08-15，P1 阶段 C1 完成 + 0.2.0 发布）
 
-- **阶段**：M0 ✅；M1 ✅；M2 ✅；M3 ✅；**P1 阶段 0/A/B ✅**（`/profile` 命令补齐 + `create` + `plugin list`（全局/单）+ `add/remove` + **跨 profile 热插拔**（`plugin entries`/`enable`/`disable`，静态解析 bundle patch + 写 cordis.patch.yml，HMR 热生效），CLI/面板/工具/命令 4 界面同步，61/61 测试全绿）。**P1 阶段 C（store）待人类决策**。
-- **发布产物**：npm `@dsh-profile-manager/core@0.1.0` + `dsh-profile-manager@0.1.1`；GitHub `https://github.com/maque2333/dsh-profile-manager`（main 已 push，topic = `dsh-plugin`）。P1 尚未发版（待 C 决策后一起发 0.2.0）。
-- **设计文档**：`docs/p1-plugin-design.md`（阶段 A/B 已完成，阶段 C 待决策）。
+- **阶段**：M0 ✅；M1 ✅；M2 ✅；M3 ✅；**P1 阶段 0/A/B/C1 ✅**（`/profile` 命令补齐 + `create` + `plugin list/add/remove` + **跨 profile 热插拔**（entries/enable/disable）+ **store 三入口**（CLI `plugin search/info/install` + 面板商店区 + `profile_plugin_search/info/install`，GitHub dsh-plugin topic 搜索），4 界面同步，65/65 测试全绿。**P1 C2（官方 webUI 插件）待做**。
+- **发布产物**：npm `@dsh-profile-manager/core@0.2.0` + `dsh-profile-manager@0.2.0`（均已发布）；GitHub `https://github.com/maque2333/dsh-profile-manager`（main 已 push，topic = `dsh-plugin`）。
+- **设计文档**：`docs/p1-plugin-design.md`（阶段 A/B 已完成）、`docs/p1-store-design.md`（store：C1 已完成、C2 取证结论已记录）。
 - **工作区**：本会话工作区已直接落在仓库目录 `/Users/maque/Suzume_Files/Project/dsh-profile-manager`（写仓库零审批；不再是旧 Option C 的「暂存目录 + 只读镜像」布局，见下方「环境事实」）。
 - **git 提交**：`8e5fbd4`（M0）→ `316cf44`（M1）→ `d75da67`（M1 验收）→ `4521725`（交接）→ `5552190`（M2）→ `aa44a21`（bootstrap link）→ `9efa56e`（交接）→ `df0bbd9`（M3 合入+README）→ `a72ec06`（Windows 审查）。已 push 到 origin/main。
 - **本机可用性**：`dshm` 全局 link 已重新指向当前仓库 `packages/cli`（bin → `lib/cli.js`）；**改代码后 `pnpm --filter dsh-profile-manager build` 即全局生效**。
@@ -40,8 +40,8 @@
 
 ## 下一步（按优先级）
 
-1. **P1 阶段 C（store）决策**：社区 dsh-plugin-store 是完整 store 但**只有 Web UI（无 CLI/agent）**，dsh-plugin-hub 有 GitHub 市场（MIT）。建议做「CLI `dshm plugin search` + agent 工具 `profile_plugin_search`」（借鉴 GitHub topic 搜索），Web UI 商店让给社区；或直接收尾。
-2. **收尾**（C 决策后）：更新 DESIGN 里程碑 + 发版 0.2.0（npm）。
+1. **P1 C2：官方 webUI 插件**（`docs/p1-store-design.md` 已有取证结论）：给 cli 包加 `dsh.client` 面 + `settings.plugins.tab` slot 注册商店 tab（StoreTab 组件 fetch `/profile-manager/api/plugin/*`），esbuild 复刻 `window.__ModuleLoader__.load` 协议 + `--external:react`，发布 0.2.1。
+2. **DESIGN.md 里程碑表**：补 P1 的最终状态（阶段 A/B/C1 完成、C2 待做）。
 
 ## 已知坑（实现时对照，勿重踩）
 
