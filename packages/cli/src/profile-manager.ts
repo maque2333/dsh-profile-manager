@@ -134,6 +134,18 @@ export class ProfileManager extends Service {
   }
 
   async stop(options: StopProfileOptions = {}): Promise<{ results: { id: string; result: string }[] }> {
+    const self = currentProfileName()
+    if (self !== undefined) {
+      const state = this.state()
+      const targetsSelf = options.profile === self
+        || (options.ids ?? []).some((id) => state.instances[id]?.profile === self)
+      if (targetsSelf) {
+        throw new DshmError(
+          `不能通过插件形态停止正在运行本管理器的 profile（${self}）——会停掉面板进程自己`,
+          `用 CLI：dshm stop ${self}（CLI 是独立进程，停 manager 不影响它自己）`,
+        )
+      }
+    }
     const { results } = await stopService({
       ctx: this.svc(),
       state: this.state(),

@@ -27,6 +27,8 @@ autoInstallPeers: false
 
 export interface ImportOptions {
   home: string
+  /** 覆盖定义文件里的 profile 名（覆盖 spec.name 后再走后续流程）。 */
+  name?: string
   /** 覆盖已存在的 profile（运行中仍拒绝，需先 stop）。 */
   force?: boolean
   /** pnpm allowBuilds 拦截时，代写豁免名单后重试。 */
@@ -108,6 +110,12 @@ function runDsh(args: string[], home: string, options: Pick<ImportOptions, 'log'
 /** import 主流程：预检 → 写三件套 → 透传 dsh plugin install → dump-config 验证 → 失败回滚。 */
 export function importProfileFile(fileText: string, options: ImportOptions): DshmProfileFile {
   const spec = parseProfileFile(fileText)
+  if (options.name !== undefined) {
+    if (!isValidProfileName(options.name)) {
+      throw new DshmError(`无效的 profile 名：${options.name}（不允许空、路径分隔符、node_modules）`)
+    }
+    spec.name = options.name
+  }
   const { home } = options
   const log = options.log ?? ((line: string) => console.log(line))
   const warn = options.warn ?? ((line: string) => console.error(`dshm: ${line}`))

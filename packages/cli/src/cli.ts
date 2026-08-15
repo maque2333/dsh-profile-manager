@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /** dshm — DeepSeek Harness Profile Manager CLI（薄壳，全部逻辑在 core）。 */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
 import {
@@ -60,35 +60,41 @@ function resolveName(arg: string | undefined, globalName: string | undefined): s
   return name
 }
 
-/** 从本地路径读一个包的 name（bundle 名与包名一致）。 */
-function readPackageName(dir: string): string {
-  const pkg = JSON.parse(readFileSync(join(resolve(dir), 'package.json'), 'utf8')) as { name?: string }
+/** 从本地路径读一个包的 name 与 version（bundle 名与包名一致）。 */
+function readPackage(dir: string): { name: string; version?: string } {
+  const pkg = JSON.parse(readFileSync(join(resolve(dir), 'package.json'), 'utf8')) as { name?: string; version?: string }
   if (typeof pkg.name !== 'string') {
     throw new DshmError(`package.json 缺少 name：${dir}`)
   }
-  return pkg.name
+  return { name: pkg.name, version: typeof pkg.version === 'string' ? pkg.version : undefined }
 }
 
 /**
  * 解析 manager profile 里 dsh-profile-manager bundle 的来源：
  * 1. `DSHM_PLUGIN` 显式指定（link:/file: 本地路径，或 npm spec）；
- * 2. 开发期：link 本地包（自己 = packages/cli，同时是 CLI 与 bundle）；
- * 3. 发布期：`dsh-profile-manager@^0.1.0`（npm）。
+ * 2. 开发期（源码 checkout，不在 node_modules 下）：link 本地包自己；
+ * 3. 发布期（npm 全局/局部安装，路径含 node_modules）：走 registry，按当前版本。
+ * 注：cordis.patch.yml 会被打包进发布产物，不能用它区分开发/发布（否则发布版也会误走 link）。
  */
 function resolvePlugin(): { name: string; spec: string } {
   const env = process.env.DSHM_PLUGIN
   if (env !== undefined && env !== '') {
     if (env.startsWith('link:') || env.startsWith('file:')) {
       const dir = env.slice(env.indexOf(':') + 1)
-      return { name: readPackageName(dir), spec: env }
+      return { name: readPackage(dir).name, spec: env }
     }
     return { name: env, spec: env }
   }
   const selfDir = join(dirname(fileURLToPath(import.meta.url)), '..')
-  if (existsSync(join(selfDir, 'cordis.patch.yml'))) {
-    return { name: readPackageName(selfDir), spec: `link:${selfDir}` }
+  const pkg = readPackage(selfDir)
+  const installed = selfDir.split(sep).includes('node_modules')
+  if (!installed) {
+    return { name: pkg.name, spec: `link:${selfDir}` }
   }
-  return { name: 'dsh-profile-manager', spec: '^0.1.0' }
+  return {
+    name: pkg.name,
+    spec: pkg.version !== undefined ? `${pkg.name}@^${pkg.version}` : `${pkg.name}@latest`,
+  }
 }
 
 /** 生成内置的 manager profile 定义（dshm-profile.yaml 文本）。 */
@@ -178,16 +184,16 @@ async function main(argv: string[]): Promise<void> {
       const text = readFileSync(resolve(file), 'utf8')
       const spec = importProfileFile(text, {
         home: home(),
+        name: options.name,
         force: options.force === true,
         allowBuilds: options.allowBuilds === true,
       })
-      const name = options.name ?? spec.name
       if (spec.meta?.port !== undefined) {
         const state = loadRuntime(home())
-        state.suggestedPorts = { ...state.suggestedPorts, [name]: spec.meta.port }
+        state.suggestedPorts = { ...state.suggestedPorts, [spec.name]: spec.meta.port }
         saveRuntime(home(), state)
       }
-      console.log(`下一步：dshm start ${name} 或 dshm show ${name}`)
+      console.log(`下一步：dshm start ${spec.name} 或 dshm show ${spec.name}`)
     })
 
   program

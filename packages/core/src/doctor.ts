@@ -2,7 +2,6 @@
 
 import { existsSync, readdirSync } from 'node:fs'
 import { archiveDir, profilesDir } from './paths.js'
-import { instanceByPort } from './runtime.js'
 import { isAlive } from './process.js'
 import { probeInstance } from './probe.js'
 import type { RuntimeState } from './types.js'
@@ -63,10 +62,6 @@ export async function runDoctor(home: string, state: RuntimeState): Promise<Doct
         findings.push({ kind: 'error', message: `端口冲突：${holder} 与 ${rec.id} 都记录在 :${rec.port}` })
       } else {
         seen.set(rec.port, rec.id)
-      }
-      const other = instanceByPort(state, rec.port)
-      if (other !== undefined && other.id !== rec.id) {
-        findings.push({ kind: 'error', message: `端口 ${rec.port} 被多个实例记录（${other.id} / ${rec.id}）` })
       }
     }
   }

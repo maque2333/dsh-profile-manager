@@ -86,4 +86,12 @@ describe('ProfileManager 服务', () => {
     const pm = ctx.get('profileManager') as ProfileManager
     expect(() => pm.delete('self', { purge: false })).toThrow(/只读/)
   })
+
+  it('stop 自保：拒绝停止当前运行 profile（否则会停掉面板进程自己）', async () => {
+    process.argv = ['node', 'dsh', '--profile', 'self']
+    const ctx = new Context()
+    await ctx.plugin(ProfileManager)
+    const pm = ctx.get('profileManager') as ProfileManager
+    await expect(pm.stop({ profile: 'self' })).rejects.toThrow(/停止正在运行本管理器/)
+  })
 })

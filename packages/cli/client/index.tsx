@@ -87,7 +87,7 @@ function App() {
     setBusy(true)
     try {
       const data = await api('/list')
-      if (data.ok) { setProfiles(data.profiles); setError('') }
+      if (data.ok) setProfiles(data.profiles)
       else setError(data.error ?? '未知错误')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -233,7 +233,7 @@ function App() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button onClick={() => void refresh()} disabled={busy}>{busy ? '刷新中…' : '刷新'}</button>
+        <button onClick={() => { setError(''); void refresh() }} disabled={busy}>{busy ? '刷新中…' : '刷新'}</button>
         <button onClick={doctor} disabled={busy}>诊断</button>
         <button onClick={toggleGlobalPlugins} disabled={busy}>{globalPlugins === null ? '插件总览' : '收起插件总览'}</button>
         <button onClick={toggleStore} disabled={busy}>{storeResults === null ? '插件商店' : '收起商店'}</button>
