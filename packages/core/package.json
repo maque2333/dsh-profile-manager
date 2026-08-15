@@ -1,6 +1,6 @@
 {
   "name": "@dsh-profile-manager/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "dshm core: pure logic library for DSH profile/instance management (no Cordis deps)",
   "license": "MIT",
   "type": "module",
@@ -12,7 +12,9 @@
       "default": "./lib/index.js"
     }
   },
-  "files": ["lib"],
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "build": "tsc -p .",
     "typecheck": "tsc -p . --noEmit"
